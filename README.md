@@ -1,21 +1,20 @@
 # S1-crawler
-Update as soon as possible. 
+Copyright © 2021 S1 Inc.
 
 ## Purpose
-This can help you to download girls imformation and video img on S1 website.
+This can help you to download girls imformation and videos img on S1 website.
 
 ## How to use
-1. Enter the girl name.
-2. Change the hearders with  user-agent and cookie.
-3. Click run to start to download.
+1. Download the .py and .txt files.
+2. Click run to start to download.
 
 ## Keep in mind
-This crawler might be banned by IP address, use carefully.
+1. This crawler might be banned by IP address, use carefully.
+2. The time.sleep func. can decrease the risk of banned.
 
 ## Update convientence crawler in future
-1. Get cookie by selenium.
-2. Create a json to save each girls data.
-3. Save as MySQL.
+1. Save as MySQL
+2. Create a json to exchange data.
 4. Other company crawler.
 5. Become an API.
 
