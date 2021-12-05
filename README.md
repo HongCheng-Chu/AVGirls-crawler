@@ -15,6 +15,7 @@ This can help you to download girls imformation and videos img on S1 website.
 ## Update convientence crawler in future
 1. Save as MySQL
 2. Create a json to exchange data.
+3. Update new video with issue day.
 4. Other company crawler.
 5. Become an API.
 
