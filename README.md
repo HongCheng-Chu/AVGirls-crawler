@@ -26,5 +26,5 @@ Copyright © 2021 S1 Inc.
 - Become an API.
 
 ## Contact me
-Please send the problem to jerry840622@gmail.com, I try my best to help you, thank you everyone.
-I will doing other company crawler after S1 finish like Madonna and MOODYZ which if it easily get.
+- Please send the problem to jerry840622@gmail.com, I try my best to help you, thank you everyone.
+- I will doing other company crawler after S1 finish like Madonna and MOODYZ which if it easily get.
