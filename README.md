@@ -11,8 +11,8 @@ Copyright © 2021 S1 Inc.
 
 ## How to use
 1. Download the .py and .txt files.
-2. Girls_crawler include to create json file func. and saving data in MySQL func., choose func. whcih you want to do.
-3. Run the Girls_crawler if you execute first time.
+2. Set your MySQL data in save_files.py
+3. Run the main.py.
 4. Use updating.py in every time you want after finish step 1.
 
 ## Keep in mind
