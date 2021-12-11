@@ -1,7 +1,7 @@
 # S1-crawler
 Copyright © 2021 S1 Inc.
 
--This project will be keep updating.
+-This project will be keep updating by each month.
 
 ## Purpose
 - Helping you to download girls imformation and videos cover.
