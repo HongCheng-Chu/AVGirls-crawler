@@ -15,12 +15,12 @@ import s1_updater
 
 
 def get_html(url, cookie):
-    response = requests.get(url, headers = get_headers(), allow_redirects=True)
+    response = requests.get(url, headers = get_headers(cookie), allow_redirects=True)
     return response.text # text return Unicode data -> get text
 
 
 def get_content(url, cookie):
-    response = requests.get(url, headers = get_headers(), timeout = 10)
+    response = requests.get(url, headers = get_headers(cookie), timeout = 10)
     return response.content # content return bytes(binary) data -> get image, video, file and etc
 
 
@@ -124,13 +124,13 @@ def get_post(girl_url, next_page, cookie):
     return post_links, image_links
 
 
-def get_issue_data(girl_cards, video_img, name, cookie):
+def get_video(girl_cards, video_img, name, cookie):
 
     video_issue = []
 
     for card, img in zip(girl_cards, video_img):
 
-        page_html = get_html(card)
+        page_html = get_html(card, cookie)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
@@ -151,19 +151,19 @@ def get_issue_data(girl_cards, video_img, name, cookie):
     return video_issue
 
 
-def Download_post(video_issue, cookie):
+def Download_video(video_issue, cookie):
 
     for data in video_issue:
         
-        dirpath = r'.\Girls_video.\{0}'.format(date['name'])
+        dirpath = r'.\Girls_video.\{0}'.format(data['name'])
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
         image = get_content(data['image'], cookie)
 
-        file_type = date['image'].split('.')[-1]
+        file_type = data['image'].split('.')[-1]
 
-        file_name = data['day'] + " " + date['number'] + " " + data['name'] + " " + date['title']
+        file_name = data['day'] + " " + data['number'] + " " + data['name'] + " " + data['title']
 
         file_path = r'.\girls_video.\{0}\{1}.{2}'.format(data['name'], file_name, file_type)
 
@@ -197,17 +197,17 @@ def get_data(girls_url, girl_name, cookie):
 
         print('get post success')
 
-        video_issue = get_issue_data(posts, images, girl_name[iter], cookie)
+        video_issue = get_video(posts, images, girl_name[iter], cookie)
 
         print('get issue data success')
     
-        Download_post(video_issue, cookie)
+        Download_video(video_issue, cookie)
 
         print('Download all post image & video success')
 
         iter = iter + 1
 
-        save_files.sql_saved(video_issue, images)
+        save_files.sql_saved(video_issue)
 
         print('MySQL saved success')
 
@@ -220,9 +220,11 @@ def main():
 
     try:
 
-        with open('last_update_day.txt', 'r') as file:
+        if os.path.isfile(".\last_update_day"):
+
+            with open('last_update_day.txt', 'r') as file:
         
-            last_update = file.readline().rstrip('\n')
+                last_update = file.readline().rstrip('\n')
         
         s1_updater.main(last_update)
 
@@ -230,7 +232,7 @@ def main():
 
         actresses = []
 
-        with open('Girls_list.txt', 'r', encoding='utf8') as names:
+        with open('s1_GirlsList.txt', 'r', encoding='utf8') as names:
 
             for name in names:
 
@@ -238,7 +240,9 @@ def main():
 
         url, cookie = search_by_name(actresses)
 
-        main(url, actresses, cookie)
+        get_data(url, actresses, cookie)
+
+    today = str(datetime.now()).split(" ")[0]
 
     with open('.\last_update_day.txt', 'w') as file:
         file.write(today)
@@ -249,9 +253,13 @@ def main():
     end = time.time()
 
     total_time = end - start
+
     hour = total_time // 3600
+
     min = (total_time - 3600 * hour) // 60
+
     sec = total_time - 3600 * hour - 60 * min
+
     print(f'Totel spend time:{int(hour)}h {int(min)}m {int(sec)}s')
 
 

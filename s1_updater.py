@@ -208,9 +208,3 @@ def main(last_update_day):
     urls, cookie = search_by_day(last_update_day)
     
     update_data(urls, cookie)
-
-    today = str(datetime.now()).split(" ")[0]
-
-    with open('.\last_update_day.txt', 'w') as file:
-        file.write(today)
-        file.close()

@@ -7,7 +7,7 @@ from datetime import datetime
 
 def create_girls_list():
 
-    with open("./girls_data.json", 'r') as f:
+    with open("./s1_GirlsData.json", 'r') as f:
         girls_dict = json.load(f)
 
     return girls_dict
@@ -222,5 +222,5 @@ def create_json_by_sql():
                     edge['videos'].append({'day': video['day'], 'number': video['number'], 'title': video['title'], 'img': video['img']})
                     break;
     
-    with open("./girls_porf.json", 'w') as f:
+    with open("./s1_GirlsData.json", 'w') as f:
         json.dump(girls_dict, f)
