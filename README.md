@@ -10,8 +10,8 @@ Copyright © 2021 S1 Inc.
 - Keep updating the informations which issue new videos every month.
 
 ## How to use
-1. Download the .py and .txt files.
-2. Set your MySQL data in save_files.py
+1. Download the .py and .txt files and put in same folder.
+2. Set your MySQL data in save_files.py.
 3. Run the main.py.
 4. Use updating.py in every time you want after finish step 1.
 
@@ -20,10 +20,7 @@ Copyright © 2021 S1 Inc.
 - The time.sleep() func. can decrease the risk of banned.
 
 ## Update convientence crawler in future
-- Save as MySQL
-- Create a json to exchange data.
-- Update new video with issue day.
-- Become an API.
+- Create an API for adult web.
 
 ## Contact me
 - Please send the problem to jerry840622@gmail.com, I try my best to help you, thank you everyone.
