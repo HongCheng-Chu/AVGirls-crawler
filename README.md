@@ -8,7 +8,7 @@ Copyright © 2021 S1 Inc.
 - Keep updating the informations which issue new videos every month.
 
 ## How to use
-1. Download the .py and .txt files and put in same folder.
+1. Download the .py, .txt and .json files and put in same folder.
 2. Set your connection MySQL data in save_files.py.
 3. Run the main.py.
 4. It can auto update by last_update_day.txt.
