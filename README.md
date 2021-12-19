@@ -1,7 +1,9 @@
 # S1-crawler
 Copyright © 2021 S1 Inc.
+Copyright © 2021 FALENO Inc.
 
--This project will be keep updating by each month.
+- New version will be upload recently.
+- This project will be keep updating by each month.
 
 ## Purpose
 - Helping you to download girls imformation and videos cover.
