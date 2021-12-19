@@ -5,7 +5,7 @@ Copyright © 2021 FALENO Inc.
 ## Warning
 - New version will be upload recently.
 - This project will be keep updating by each month.
-- GirlsData.json is unavailable.
+- GirlsData.json is unavailable in save_files.py.
 
 ## Purpose
 - Helping you to download girls imformation and videos cover.
