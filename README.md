@@ -2,8 +2,10 @@
 Copyright © 2021 S1 Inc.
 Copyright © 2021 FALENO Inc.
 
+## Warning
 - New version will be upload recently.
 - This project will be keep updating by each month.
+- GirlsData.json is unavailable.
 
 ## Purpose
 - Helping you to download girls imformation and videos cover.
