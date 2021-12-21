@@ -87,7 +87,7 @@ def create_sql_girls_list(connection, girls_dict, sql_password, sql_database):
 
 def sql_saved(videos):
 
-    sql_password = 'Chu0622.' #input('sql password : ')
+    sql_password = input('sql password : ')
 
     sql_database = create_sql_database(sql_password)
 
