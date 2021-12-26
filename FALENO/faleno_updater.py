@@ -14,10 +14,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-import save_files
+import savefiles
 
 
-def search_girls(last_update):
+def get_post(last_update_day, actress, url):
 
     ChromeOptions = Options()
 
@@ -31,79 +31,68 @@ def search_girls(last_update):
 
     time.sleep(5)
 
-    driver.get("https://faleno.jp/top/")
+    driver.get('https://faleno.jp/top/')
 
     time.sleep(5)
 
     driver.find_element_by_link_text('は　い').click()
 
     time.sleep(5)
-    
+
     posts = []
 
-    page = "https://faleno.jp/top/work/"
+    driver.get(url)
 
-    while not page == 'none':
+    time.sleep(10)
 
-        driver.get(page)
+    infos = driver.find_elements_by_xpath("//div[@class='waku_kanren01']")
 
-        time.sleep(5)
+    for info in infos:
 
-        infos = driver.find_elements_by_xpath("//div[@class='waku_kanren01']")
-
-        out_day = ''
-
-        for info in infos:
-
-            root = etree.HTML(info.get_attribute('innerHTML'))
-
-            day_list = root.xpath("//div[@class='btn08']")
-            day = day_list[0].text.split(" ")[0].replace("/", "-")
-            print(day)
-            out_day = day
-
-            if day < last_update:
-                break
+        root = etree.HTML(info.get_attribute('innerHTML'))
         
-            img_list = root.cssselect('a > img')
-            image = img_list[0].get('src') 
-            #print(image)
+        img_list = root.cssselect('a > img')
+        image = img_list[0].get('src') 
 
-            number_list = root.xpath("//div[@class='text_name']/a")
-            number = number_list[0].get('href').split("/")[-2]
-            #print(number)
+        number_list = root.xpath("//div[@class='text_name']/a")
+        number = number_list[0].get('href').split("/")[-2]
 
-            title = img_list[0].get('alt') 
-            #print(title)
+        title = img_list[0].get('alt')
 
-            actress_list = root.xpath("//div[@class='text_kanren01 clearfix']/p")
-            actress = actress_list[0].text
-            #print(actress)
+        day_list = root.xpath("//div[@class='btn08']")
+        day = day_list[0].text.split(" ")[0].replace("/", "-")
 
-            posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'image': image})
-
-        if out_day < last_update:
+        if(day <= last_update_day):
             break
-        
-        try:
-            page = driver.find_elements_by_xpath("//a[@class='nextpostslink'").get_attirbute('href')
 
-        except:
-            page = 'none'
+        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'image': image})
 
-        print(page)
+    cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
+
+    cookiestr = ";".join(item for item in cookie)
 
     driver.quit()
 
-    return posts
+    return posts, cookiestr
 
 
-def main(day):
+def main(last_update_day, name, url):
 
-    posts = search_girls(day)
+    posts, cookie = get_post(last_update_day, name, url)
 
-    print("videos data download success")
+    print("get videos data success")
 
-    save_files.sql_saved(posts)
+    print(posts)
+
+    if posts:
+
+        for post in posts:
+
+            post['company'] = 'faleno'
+
+    try:
+        savefiles.sql_saved(posts, 'faleno')
+    except:
+        print('Do not have new video')
 
     print('SQL saved success')

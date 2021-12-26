@@ -15,7 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 
-import save_files
+import savefiles
 from FALENO import faleno_updater
 
 
@@ -83,7 +83,7 @@ def search_girls():
     return actresses, profs
 
 
-def get_post(actresses, urls):
+def get_post(actress, url):
 
     ChromeOptions = Options()
 
@@ -107,34 +107,28 @@ def get_post(actresses, urls):
 
     posts = []
 
-    for actress, url in zip(actresses, urls):
+    driver.get(url)
 
-        driver.get(url)
+    time.sleep(10)
 
-        time.sleep(10)
+    infos = driver.find_elements_by_xpath("//div[@class='waku_kanren01']")
 
-        infos = driver.find_elements_by_xpath("//div[@class='waku_kanren01']")
+    for info in infos:
 
-        for info in infos:
-
-            root = etree.HTML(info.get_attribute('innerHTML'))
+        root = etree.HTML(info.get_attribute('innerHTML'))
         
-            img_list = root.cssselect('a > img')
-            image = img_list[0].get('src') 
-            #print(image)
+        img_list = root.cssselect('a > img')
+        image = img_list[0].get('src') 
 
-            number_list = root.xpath("//div[@class='text_name']/a")
-            number = number_list[0].get('href').split("/")[-2]
-            #print(number)
+        number_list = root.xpath("//div[@class='text_name']/a")
+        number = number_list[0].get('href').split("/")[-2]
 
-            title = img_list[0].get('alt') 
-            #print(title)
+        title = img_list[0].get('alt')
 
-            day_list = root.xpath("//div[@class='btn08']")
-            day = day_list[0].text.split(" ")[0].replace("/", "-")
-            #print(day)
+        day_list = root.xpath("//div[@class='btn08']")
+        day = day_list[0].text.split(" ")[0].replace("/", "-")
 
-            posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'image': image})
+        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'image': image, 'company': 'faleno'})
 
     cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
 
@@ -155,11 +149,11 @@ def download_video(videos, cookie):
 
         image = get_content(video['image'], cookie)
 
-        file_type = video['image'].split('.')[-1]
-
         file_name = video['day'] + " " + video['number'] + " " + video['name'] + " " + video['title']
 
-        file_path = r'.\Girls_video.\Faleno.\{0}\{1}.{2}'.format(video['name'], file_name, file_type)
+        file_path = r'.\Girls_video.\Faleno.\{0}\{1}.{2}'.format(video['name'], file_name, 'jpg')
+
+        download_obj(image, file_path)
 
         try:
             download_obj(image, file_path)
@@ -170,11 +164,9 @@ def download_video(videos, cookie):
             print('{0} download fail'.format(file_name))
 
 
-def get_data():
+def get_data(actress, url):
 
-    actresses, urls = search_girls()
-
-    posts, cookie = get_post(actresses, urls)
+    posts, cookie = get_post(actress, url)
 
     print('get post & cookie success')
 
@@ -182,7 +174,11 @@ def get_data():
    
     print('download success')
 
-    save_files.sql_saved(posts)
+    for post in posts:
+
+        post['company'] = 'faleno'
+
+    savefiles.sql_saved(posts, 'faleno')
 
     print('sql success')
 
@@ -190,29 +186,19 @@ def get_data():
 def main():
 
     start = time.time()
-    
-    try:
 
-        if os.path.isfile(".\last_update_day"):
+    actresses, urls = search_girls()
 
-            with open('last_update_day.txt', 'r') as file:
+    for actress, url in zip(actresses, urls):
         
-                last_update = file.readline().rstrip('\n')
-        
-        faleno_updater.main(last_update)
+        last_update = savefiles.check_day(actress, 'faleno')
 
-    except:
+        if last_update:
+            faleno_updater.main(last_update['day'], actress, url)
 
-        get_data()
+        else:
+            get_data(actress, url)
     
-    today = str(datetime.now()).split(" ")[0]
-
-    with open('.\last_update_day.txt', 'w') as file:
-
-        file.write(today)
-
-        file.close()
-
     print(' Success !!!! ╮(╯  _ ╰ )╭')
 
     end = time.time()
