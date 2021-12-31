@@ -11,7 +11,26 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from datetime import datetime
 
-import save_files
+import savefiles
+
+
+import requests
+import requests_html
+import os
+import time
+import json
+import random
+import re
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
+from fake_useragent import UserAgent
+from lxml import etree
+from datetime import datetime
+
+import savefiles
+from S1 import s1_updater
 
 
 def get_html(url, cookie):
@@ -36,7 +55,7 @@ def get_headers(cookie):
     return headers
 
 
-def search_by_day(last_update_day):
+def get_cookie(url):
 
     ChromeOptions = Options()
 
@@ -47,97 +66,60 @@ def search_by_day(last_update_day):
 
     driver = webdriver.Chrome(chrome_options = ChromeOptions)
 
-    time.sleep(3)
+    time.sleep(5)
 
-    driver.get("https://s1s1s1.com/works/date")
+    driver.get(url)
 
-    time.sleep(3)
-
-    urls = []
-
-    items = driver.find_elements_by_xpath("//a[@class='item c-main-font-hover']")
-
-    for item in items:
-        
-        issue_day = item.get_attribute('href')
-        
-        trim = issue_day.split('/')[-1]
-
-        if trim > last_update_day:
-
-            urls.append(issue_day)
-
-        else:
-
-            break
-
-        time.sleep(3)
+    time.sleep(5)
 
     cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
+
     cookiestr = ";".join(item for item in cookie)
 
     driver.quit()
-    
-    return urls, cookiestr
+
+    return cookiestr
 
 
-def get_post(IssueDay_url, next_page, cookie):
+def get_post(url, next_page, cookie):
 
-    girls_card = []
+    post_links = []
+
+    image_links = []
 
     if next_page == 'none':
 
-        page_html = get_html(IssueDay_url, cookie)
+        page_html = get_html(url, cookie)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
-        cards = page_soup.find_all("div", {'class':"c-card"})
+        cards = page_soup.find("div", {'class':"swiper-slide c-low--6"}).find_all("a", {'class':"item"})
 
         for card in cards:
 
-            day = IssueDay_url.split('/')[-1]
-            
-            number = card.find("a", {'class':"img hover"})["href"].split('/')[-1]
-            
-            try:
-                name = card.find("a", {'class': 'name c-main-font-hover'}).getText()
-            except:
-                name = 'multiple'
-            
-            title = card.find("p", {'class': 'text'}).getText()
-            
+            post_links.append(card["href"])
+
             image = card.find("img")["data-src"]
 
-            girls_card.append({'day': day, 'number': number, 'name': name, 'title': title, 'image': image})
+            image_links.append(image)
+            
+        time.sleep(2)
 
     while not next_page == 'none':
 
-        page_html = get_html(IssueDay_url, cookie)
+        page_html = get_html(url, cookie)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
-        cards = page_soup.find_all("div", {'class':"c-card"})
+        cards = page_soup.find("div", {'class':"swiper-slide c-low--6"}).find_all("a", {'class':"item"})
 
         for card in cards:
 
-            day = IssueDay_url.split("/")[-1]
-
-            number = card.find("a", {'class':"img hover"})["href"].split('/')[-1]
-
-            try:
-                name = card.find("a", {'class': 'name c-main-font-hover'}).getText()
-            except:
-                name = 'multiple'
-
-            title = card.find("p", {'class': 'text'}).getText().strip()
+            post_links.append(card["href"])
 
             image = card.find("img")["data-src"]
 
-            girls_card.append({'day': day, 'number': number, 'name': name, 'title': title, 'image': image})
-
-            time.sleep(5)
-
-            print(day, number, name, title, image)
+            image_links.append(image)
 
         try:
             next_page = page_soup.find("a", {"rel": "next"})["href"]
@@ -145,16 +127,48 @@ def get_post(IssueDay_url, next_page, cookie):
         except:
             next_page = 'none'
 
-        girl_url = next_page
+        url = next_page
 
-    return girls_card
+        time.sleep(2)
+
+    return post_links, image_links
 
 
-def Download_post(videos_intro, cookie):
+def get_video(cards, images, actress, cookie, last_update_day):
 
-    for video in videos_intro:
+    videos = []
 
-        dirpath = r'.\girls_video.\{0}'.format(video['name'])
+    for card, image in zip(cards, images):
+
+        page_html = get_html(card, cookie)
+
+        page_soup = BeautifulSoup(page_html, 'html.parser')
+
+        datas = page_soup.find_all("div", {"class": "td"})
+
+        day = datas[1].find("a", {"class": "c-tag c-main-bg-hover c-main-font c-main-bd"})["href"];
+
+        issue_day = day.split('/')[-1].strip()
+
+        if issue_day < last_update_day:
+            break
+
+        issue_number = card.split('/')[-1].split('?')[0]
+
+        issue_title = page_soup.find("h2", {"class": "p-workPage__title"}).getText().strip()
+
+        videos.append({'day': issue_day, 'number': issue_number, 'name': actress, 'title': issue_title, 'video': image, 'company': 's1'})
+
+        time.sleep(3)
+    
+    return videos
+
+
+def Download_video(videos, cookie):
+
+    for video in videos:
+        
+        dirpath = r'.\Girls_video.\{0}'.format(data['name'])
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
@@ -173,40 +187,47 @@ def Download_post(videos_intro, cookie):
 
         except:
             print('{0} download fail'.format(file_name))
+
+        time.sleep(2)
        
         
-def update_data(posts_url, cookie):
+def get_data(actress, url, cookie, last_update_day):
 
-    for post in posts_url:
+    html = get_html(url, cookie)
 
-        html = get_html(post, cookie)
+    soup = BeautifulSoup(html, "html.parser")
 
-        soup = BeautifulSoup(html, "html.parser")
-
-        try :
-            next_page = soup.find("a", {"rel": "next"})["href"]
-        except:
-            next_page = 'none'
+    try :
+        next_page = soup.find("a", {"rel": "next"})["href"]
+    except:
+        next_page = 'none'
     
-        print('get next page success')
+    print('get next page success')
 
-        videos_intro = get_post(post, next_page, cookie)
-
-        print('get video intro success')
+    posts, images = get_post(url, next_page, cookie)
     
-        Download_post(videos_intro, cookie)
+    print('get post success')
 
-        print('Download all post image & video success')
+    videos = get_video(posts, images, actress, cookie, last_update_day)
 
-        save_files.sql_saved(videos_intro)
+    print('get issue data success')
 
-        print('MySQL saved success')
+    savefiles.sql_saved(videos, 's1')
 
-        #save_files.json_saved_without_sql(video_issue, images)
-
-
-def main(last_update_day):
-
-    urls, cookie = search_by_day(last_update_day)
+    print('MySQL saved success')
     
-    update_data(urls, cookie)
+    '''
+    Download function is choose to you.
+
+    Download_video(videos, cookie)
+
+    print('Download all post image & video success')
+    '''
+    
+
+
+def main(last_update_day, actress, url):
+    
+    cookie = get_cookie(url)
+   
+    get_data(actress, url, cookie, last_update_day)

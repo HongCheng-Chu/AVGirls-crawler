@@ -1,4 +1,5 @@
 import requests
+import requests_html
 import os
 import time
 import json
@@ -10,8 +11,9 @@ from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from lxml import etree
+from datetime import datetime
 
-import save_files
+import savefiles
 from S1 import s1_updater
 
 
@@ -81,39 +83,7 @@ def search_girls():
     return actresses, urls, cookiestr
 
 
-def search_videos(actresses):
-
-    ChromeOptions = Options()
-
-    ChromeOptions.add_argument('--headless')
-
-    prefs = {"profile.managed_default_content_settings.images": 2}
-    ChromeOptions.add_experimental_option("prefs", prefs)
-
-    driver = webdriver.Chrome(chrome_options = ChromeOptions)
-
-    time.sleep(5)
-
-    driver.get("https://s1s1s1.com/top")
-
-    time.sleep(5)
-
-    urls = []
-
-    for actress in actresses:
-
-        driver.find_element_by_name("keyword").send_keys(actress, Keys.ENTER)
-
-        urls.append(driver.current_url)
-
-        time.sleep(5)
-
-    driver.quit()
-
-    return urls
-
-
-def get_post(girl_url, next_page, cookie):
+def get_post(url, next_page, cookie):
 
     post_links = []
 
@@ -121,15 +91,15 @@ def get_post(girl_url, next_page, cookie):
 
     if next_page == 'none':
 
-        page_html = get_html(girl_url, cookie)
+        page_html = get_html(url, cookie)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
-        cards = page_soup.find_all("div", {'class':"c-card"})
+        cards = page_soup.find("div", {'class':"swiper-slide c-low--6"}).find_all("a", {'class':"item"})
 
         for card in cards:
 
-            post_links.append(card.find("a", {'class':"img hover"})["href"])
+            post_links.append(card["href"])
 
             image = card.find("img")["data-src"]
 
@@ -139,15 +109,15 @@ def get_post(girl_url, next_page, cookie):
 
     while not next_page == 'none':
 
-        page_html = get_html(girl_url, cookie)
+        page_html = get_html(url, cookie)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
-        cards = page_soup.find_all("div", {'class':"c-card"})
+        cards = page_soup.find("div", {'class':"swiper-slide c-low--6"}).find_all("a", {'class':"item"})
 
         for card in cards:
 
-            post_links.append(card.find("a", {'class':"img hover"})["href"])
+            post_links.append(card["href"])
 
             image = card.find("img")["data-src"]
 
@@ -159,18 +129,18 @@ def get_post(girl_url, next_page, cookie):
         except:
             next_page = 'none'
 
-        girl_url = next_page
+        url = next_page
 
         time.sleep(2)
 
     return post_links, image_links
 
 
-def get_video(girl_cards, video_img, name, cookie):
+def get_video(cards, images, actress, cookie):
 
-    video_issue = []
+    videos = []
 
-    for card, img in zip(girl_cards, video_img):
+    for card, image in zip(cards, images):
 
         page_html = get_html(card, cookie)
 
@@ -182,32 +152,32 @@ def get_video(girl_cards, video_img, name, cookie):
 
         issue_day = day.split('/')[-1].strip()
 
-        issue_number = card.split('/')[-1].strip()
+        issue_number = card.split('/')[-1].split('?')[0]
 
         issue_title = page_soup.find("h2", {"class": "p-workPage__title"}).getText().strip()
 
-        video_issue.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'image': img})
+        videos.append({'day': issue_day, 'number': issue_number, 'name': actress, 'title': issue_title, 'video': image, 'company': 's1'})
 
-        time.sleep(2)
+        time.sleep(3)
     
-    return video_issue
+    return videos
 
 
-def Download_video(video_issue, cookie):
+def Download_video(videos, cookie):
 
-    for data in video_issue:
+    for video in videos:
         
         dirpath = r'.\Girls_video.\{0}'.format(data['name'])
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
-        image = get_content(data['image'], cookie)
+        image = get_content(video['image'], cookie)
 
-        file_type = data['image'].split('.')[-1]
+        file_type = video['image'].split('.')[-1]
 
-        file_name = data['day'] + " " + data['number'] + " " + data['name'] + " " + data['title']
+        file_name = video['day'] + " " + video['number'] + " " + video['name'] + " " + video['title']
 
-        file_path = r'.\girls_video.\{0}\{1}.{2}'.format(data['name'], file_name, file_type)
+        file_path = r'.\girls_video.\{0}\{1}.{2}'.format(video['name'], file_name, file_type)
 
         try:
             download_obj(image, file_path)
@@ -217,75 +187,63 @@ def Download_video(video_issue, cookie):
         except:
             print('{0} download fail'.format(file_name))
 
-        time.sleep(1)
+        time.sleep(2)
        
         
-def get_data(urls, names, cookie):
+def get_data(actress, url, cookie):
 
-    iter = 0
+    html = get_html(url, cookie)
 
-    for url, name in zip(urls, names):
+    soup = BeautifulSoup(html, "html.parser")
 
-        html = get_html(url, cookie)
-
-        soup = BeautifulSoup(html, "html.parser")
-
-        try :
-            next_page = soup.find("a", {"rel": "next"})["href"]
-        except:
-            next_page = 'none'
+    try :
+        next_page = soup.find("a", {"rel": "next"})["href"]
+    except:
+        next_page = 'none'
     
-        print('get next page success')
+    print('get next page success')
 
-        posts, images = get_post(url, next_page, cookie)
-
-        print('get post success')
-
-        video_issue = get_video(posts, images, name, cookie)
-
-        print('get issue data success')
+    posts, images = get_post(url, next_page, cookie)
     
-        Download_video(video_issue, cookie)
+    print('get post success')
 
-        print('Download all post image & video success')
+    videos = get_video(posts, images, actress, cookie)
 
-        save_files.sql_saved(video_issue)
+    print('get issue data success')
 
-        print('MySQL saved success')
+    savefiles.sql_saved(videos, 's1')
 
-        #save_files.json_saved_without_sql(video_issue, images)
+    print('MySQL saved success')
+    
+    '''
+    Download function is choose to you.
+
+    Download_video(videos, cookie)
+
+    print('Download all post image & video success')
+    '''
+
+    
 
 
 def main():
 
     start = time.time()
     
-    try:
-
-        if os.path.isfile(".\last_update_day"):
-
-            with open('last_update_day.txt', 'r') as file:
-        
-                last_update = file.readline().rstrip('\n')
-        
-        s1_updater.main(last_update)
-
-    except:
-
-        actresses, urls, cookie = search_girls()
-
-        curr = search_videos(actresses)
-
-        get_data(curr, actresses, cookie)
+    actresses, urls, cookie = search_girls()
     
-    today = str(datetime.now()).split(" ")[0]
+    for actress, url in zip(actresses, urls):
+        
+        last_update = savefiles.check_day(actress, 's1')
 
-    with open('.\last_update_day.txt', 'w') as file:
-        file.write(today)
-        file.close()
+        if last_update:
+            s1_updater.main(last_update['day'], actress, url)
 
+        else:
+            get_data(actress, url, cookie)
+    
     print(' Success !!!! ╮(╯  _ ╰ )╭')
-
+    
     end = time.time()
 
     total_time = end - start
