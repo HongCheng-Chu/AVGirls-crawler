@@ -1,26 +1,23 @@
 import requests
 import os
 import time
-import json
-import random
-import re
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from lxml import etree
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from datetime import datetime
 
 import savefiles
 from FALENO import faleno_updater
+from av_manager import AvManager
+
+avc_manager = AvManager()
+avc_manager.company = 'FALENO'
 
 
-def get_content(url, cookie):
-    response = requests.get(url, headers = get_headers(cookie), timeout = 10)
+def get_content(url):
+    response = requests.get(url, headers = get_headers(), timeout = 10)
     return response.content # content return bytes(binary) data -> get image, video, file and etc
 
 
@@ -30,9 +27,9 @@ def download_obj(data, path):
         file.close()
 
 
-def get_headers(cookie):
+def get_headers():
     ua = UserAgent()
-    headers = {'user-agent': ua.random, 'cookie': cookie}
+    headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
     return headers
 
 
@@ -128,7 +125,7 @@ def get_post(actress, url):
         day_list = root.xpath("//div[@class='btn08']")
         day = day_list[0].text.split(" ")[0].replace("/", "-")
 
-        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'image': image, 'company': 'faleno'})
+        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'video': image, 'company': 'FALENO'})
 
     cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
 
@@ -139,7 +136,7 @@ def get_post(actress, url):
     return posts, cookiestr
 
 
-def download_video(videos, cookie):
+def download_video(videos):
 
     for video in videos:
         
@@ -147,7 +144,7 @@ def download_video(videos, cookie):
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
-        image = get_content(video['image'], cookie)
+        image = get_content(video['image'])
 
         file_name = video['day'] + " " + video['number'] + " " + video['name'] + " " + video['title']
 
@@ -168,36 +165,36 @@ def get_data(actress, url):
 
     posts, cookie = get_post(actress, url)
 
-    print('get post & cookie success')
+    avc_manager.cookie = cookie
 
+    savefiles.save_data(posts, avc_manager.company, avc_manager.sql_password)
+
+    '''
     download_video(posts, cookie)
    
     print('download success')
-
-    for post in posts:
-
-        post['company'] = 'faleno'
-
-    savefiles.sql_saved(posts, 'faleno')
-
-    print('sql success')
+    '''
 
 
-def main():
+def main(sql_password):
 
     start = time.time()
 
     actresses, urls = search_girls()
 
+    avc_manager.sql_password = sql_password
+
     for actress, url in zip(actresses, urls):
         
-        last_update = savefiles.check_day(actress, 'faleno')
+        last_update_day = savefiles.check_day(actress, avc_manager.company, sql_password)
 
-        if last_update:
-            faleno_updater.main(last_update['day'], actress, url)
+        if last_update_day:
+            faleno_updater.main(last_update_day['day'], actress, url, sql_password)
 
         else:
             get_data(actress, url)
+
+        print('{0} video items save complete.'.format(actress))
     
     print(' Success !!!! ╮(╯  _ ╰ )╭')
 

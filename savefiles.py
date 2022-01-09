@@ -1,8 +1,5 @@
-import json
-import os
 import pymysql
 from pymysql import cursors
-from datetime import datetime
 
 
 def create_database(sql_password):
@@ -20,39 +17,27 @@ def create_database(sql_password):
 
     cursor = connection.cursor()
 
-    try:
-        sql = "create database if not exists avgirls"
+    sql = "create database if not exists avgirls"
 
-        cursor.execute(sql)
+    cursor.execute(sql)
 
-        print('Create avgirls database success')
-
-    except:
-        print('Already has avgirls database')
+    print('Create avgirls database success')
 
     connection.close()
 
     return 'avgirls'
 
 
-def sql_saved(videos, company):
-
-    sql_password = input('sql password : ')
+def save_data(videos, company, sql_password):
 
     sql_database = create_database(sql_password)
 
-    try:
-        # 建立Connection物件
-        connection = pymysql.connect(host='localhost',
+    connection = pymysql.connect(host='localhost',
                                user='root',
                                password= sql_password,
                                database= sql_database,
                                cursorclass=pymysql.cursors.DictCursor, # 以字典的形式返回操作結果
                                charset='utf8')
-        if connection:
-            print('Connect success')
-    except:
-        print('Connect fail')
 
     cursor = connection.cursor()
 
@@ -62,46 +47,38 @@ def sql_saved(videos, company):
                number varchar(50) not null,\
                name varchar(50),\
                title varchar(250),\
-               video varchar(250),\
+               cover varchar(250),\
                company varchar(50),\
                primary key (number)\
                )engine=InnoDB DEFAULT CHARSET=utf8;".format(company)
 
         cursor.execute(sql)
-
         connection.commit()
+        print('Create {0} success'.format(company))
 
-        print('Create vidoes_list success')
     except:
         connection.rollback()
-        print('Already have vidoes_list')
+        print('Already have {0}'.format(company))
 
     for video in videos:  
 
-        sql = "insert into {0} (day, number, name, title, video, company) VALUES (%s, %s, %s, %s, %s, %s)".format(company)
+        sql = "insert into {0} (day, number, name, title, cover, company) VALUES (%s, %s, %s, %s, %s, %s)".format(company)
 
-        val = (video['day'], video['number'], video['name'], video['title'], video['video'], video['company'])
+        val = (video['day'], video['number'], video['name'], video['title'], video['cover'], video['company'])
         
         try:
-            # 執行sql
             cursor.execute(sql, val)
-
-            # 提交到數據庫
             connection.commit()
-
             print('{0} save success in {1} list'.format(video['title'], company))
-        except:
-            # 發生錯誤跳回
-            connection.rollback()
 
+        except:
+            connection.rollback()
             print('{0} already save in {1} list'.format(video['title'], company))
 
     connection.close()
 
 
-def check_day(name, company):
-
-    sql_password = input('sql password : ')
+def check_day(name, company, sql_password):
 
     sql_database = create_database(sql_password)
 
@@ -135,4 +112,69 @@ def check_day(name, company):
 
         print('Can not find {0} table or get recent update day'.format(company))
 
+    connection.close()
+
     return recent_day
+
+
+def save_actresslist(girls, sql_password, company):
+
+    sql_database = create_database(sql_password)
+
+    try:
+        connection = pymysql.connect(host='localhost',
+                               user='root',
+                               password= sql_password,
+                               database= sql_database,
+                               cursorclass=pymysql.cursors.DictCursor,
+                               charset='utf8')
+    except:
+        print('Connect fail')
+
+    cursor = connection.cursor()
+
+    try:
+        sql = "create table if not exists actresslist(\
+               headshot varchar(300),\
+               jp varchar(10),\
+               en varchar(20),\
+               ch varchar(10),\
+               birth varchar(20),\
+               company varchar(20),\
+               body varchar(20),\
+               cup varchar(20),\
+               twitter varchar(250),\
+               ig varchar(250),\
+               primary key (jp)\
+               )engine=InnoDB DEFAULT CHARSET=utf8;"
+
+        cursor.execute(sql)
+        connection.commit()
+        print('Create actresslist success')
+
+    except:
+        connection.rollback()
+        print('Already have actresslist')
+
+    for girl in girls:  
+
+        try:
+            sql = "insert into actresslist (jp, headshot, company) values (%s, %s, %s)"
+
+            val = (girl['name'], girl['headshot'], company)
+
+            try:
+                cursor.execute(sql, val)
+                connection.commit()
+                print('{0} save success'.format(girl['name']))
+            except:
+                connection.rollback()
+
+        except:
+            sql = "update actresslist set headshot = '{0}' where jp = '{1}'".format(girl['headshot'], girl['name'])
+
+            cursor.execute(sql, val)
+            connection.commit()
+            print('{0} update success'.format(girl['name']))
+
+    connection.close()

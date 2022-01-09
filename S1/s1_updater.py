@@ -12,15 +12,19 @@ from fake_useragent import UserAgent
 from datetime import datetime
 
 import savefiles
+from av_manager import AvManager
+
+avc_manager = AvManager()
+avc_manager.company = 'S1'
 
 
-def get_html(url, cookie):
-    response = requests.get(url, headers = get_headers(cookie), allow_redirects=True)
+def get_html(url):
+    response = requests.get(url, headers = get_headers(), allow_redirects=True)
     return response.text # text return Unicode data -> get text
 
 
-def get_content(url, cookie):
-    response = requests.get(url, headers = get_headers(cookie), timeout = 10)
+def get_content(url):
+    response = requests.get(url, headers = get_headers(), timeout = 10)
     return response.content # content return bytes(binary) data -> get image, video, file and etc
 
 
@@ -30,39 +34,13 @@ def download_obj(data, path):
         file.close()
 
 
-def get_headers(cookie):
+def get_headers():
     ua = UserAgent()
-    headers = {'user-agent': ua.random, 'cookie': cookie}
+    headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
     return headers
 
 
-def get_cookie(url):
-
-    ChromeOptions = Options()
-
-    ChromeOptions.add_argument('--headless')
-
-    prefs = {"profile.managed_default_content_settings.images": 2}
-    ChromeOptions.add_experimental_option("prefs", prefs)
-
-    driver = webdriver.Chrome(chrome_options = ChromeOptions)
-
-    time.sleep(5)
-
-    driver.get(url)
-
-    time.sleep(5)
-
-    cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
-
-    cookiestr = ";".join(item for item in cookie)
-
-    driver.quit()
-
-    return cookiestr
-
-
-def get_post(url, next_page, cookie):
+def get_post(url, next_page):
 
     post_links = []
 
@@ -70,7 +48,7 @@ def get_post(url, next_page, cookie):
 
     if next_page == 'none':
 
-        page_html = get_html(url, cookie)
+        page_html = get_html(url)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
@@ -88,7 +66,7 @@ def get_post(url, next_page, cookie):
 
     while not next_page == 'none':
 
-        page_html = get_html(url, cookie)
+        page_html = get_html(url)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
@@ -115,13 +93,13 @@ def get_post(url, next_page, cookie):
     return post_links, image_links
 
 
-def get_video(cards, images, actress, cookie, last_update_day):
+def get_video(cards, images, name):
 
     videos = []
 
     for card, image in zip(cards, images):
 
-        page_html = get_html(card, cookie)
+        page_html = get_html(card)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
@@ -131,29 +109,29 @@ def get_video(cards, images, actress, cookie, last_update_day):
 
         issue_day = day.split('/')[-1].strip()
 
-        if issue_day < last_update_day:
+        if issue_day < avc_manager.update:
             break
 
         issue_number = card.split('/')[-1].split('?')[0]
 
         issue_title = page_soup.find("h2", {"class": "p-workPage__title"}).getText().strip()
 
-        videos.append({'day': issue_day, 'number': issue_number, 'name': actress, 'title': issue_title, 'video': image, 'company': 's1'})
+        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'video': image, 'company': avc_manager.company})
 
         time.sleep(3)
     
     return videos
 
 
-def Download_video(videos, cookie):
+def Download_video(videos):
 
     for video in videos:
         
-        dirpath = r'.\Girls_video.\{0}'.format(data['name'])
+        dirpath = r'.\Girls_video.\{0}'.format(video['name'])
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
-        image = get_content(video['image'], cookie)
+        image = get_content(video['image'])
 
         file_type = video['image'].split('.')[-1]
 
@@ -172,9 +150,9 @@ def Download_video(videos, cookie):
         time.sleep(2)
        
         
-def get_data(actress, url, cookie, last_update_day):
+def get_data(actress, url):
 
-    html = get_html(url, cookie)
+    html = get_html(url)
 
     soup = BeautifulSoup(html, "html.parser")
 
@@ -182,33 +160,27 @@ def get_data(actress, url, cookie, last_update_day):
         next_page = soup.find("a", {"rel": "next"})["href"]
     except:
         next_page = 'none'
-    
-    print('get next page success')
 
-    posts, images = get_post(url, next_page, cookie)
-    
-    print('get post success')
+    posts, images = get_post(url, next_page)
 
-    videos = get_video(posts, images, actress, cookie, last_update_day)
+    videos = get_video(posts, images, actress['name'])
 
-    print('get issue data success')
-
-    savefiles.sql_saved(videos, 's1')
-
-    print('MySQL saved success')
+    savefiles.save_data(videos, avc_manager.company, avc_manager.sql_password)
     
     '''
-    Download function is choose to you.
-
-    Download_video(videos, cookie)
-
-    print('Download all post image & video success')
+    The following function is choose on you.
+    Recommend to use MySQL download which is more quickly.
     '''
+
+    #Download_video(videos)
+    #print('Download all post image & video success')
     
 
 
-def main(last_update_day, actress, url):
+def main(last_update_day, actress, url, sql_password, cookie):
     
-    cookie = get_cookie(url)
+    avc_manager.cookie = cookie
+    avc_manager.sql_password = sql_password
+    avc_manager.update = last_update_day
    
-    get_data(actress, url, cookie, last_update_day)
+    get_data(actress, url)

@@ -2,26 +2,21 @@ import requests_html
 from requests_html import HTMLSession
 import os
 import time
-import json
-import re
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
 from fake_useragent import UserAgent
 from lxml import etree
-from datetime import datetime
 
 import savefiles
-#from IDEAPOCKET import ideapocket_updater
+from IDEAPOCKET import ideapocket_updater
+from av_manager import AvManager
+
+avc_manager = AvManager()
+avc_manager.company = 'ideapocket'
 
 
-def get_html(url, cookie):
-    response = requests.get(url, headers = get_headers(cookie), allow_redirects=True)
-    return response.text # text return Unicode data -> get text
-
-
-def get_content(url, cookie):
-    response = requests.get(url, headers = get_headers(cookie), timeout = 10)
+def get_content(url):
+    response = requests.get(url, headers = get_headers(), timeout = 10)
     return response.content # content return bytes(binary) data -> get image, video, file and etc
 
 
@@ -31,9 +26,9 @@ def download_obj(data, path):
         file.close()
 
 
-def get_headers(cookie):
+def get_headers():
     ua = UserAgent()
-    headers = {'user-agent': ua.random, 'cookie': cookie}
+    headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
     return headers
 
 
@@ -79,7 +74,7 @@ def search_girls():
     return actresses, cookiestr
 
 
-def get_post(url, next_page, cookie):
+def get_post(url, next_page):
 
     session = HTMLSession()
 
@@ -89,7 +84,7 @@ def get_post(url, next_page, cookie):
 
     if next_page == 'none':
 
-        content = session.get(url, headers = get_headers(cookie))
+        content = session.get(url, headers = get_headers())
 
         cards = content.html.find("div[class = 'swiper-slide c-low--6']")[0].find("a[class = 'item']")
         
@@ -107,7 +102,7 @@ def get_post(url, next_page, cookie):
 
     while not next_page == 'none':
 
-        content = session.get(url, headers = get_headers(cookie))
+        content = session.get(url, headers = get_headers())
 
         cards = content.html.find("div[class = 'swiper-slide c-low--6']")[0].find("a[class = 'item']")
 
@@ -129,12 +124,12 @@ def get_post(url, next_page, cookie):
 
         url = next_page
 
-        time.sleep(3)
+        time.sleep(2)
 
     return posts, covers
 
 
-def get_video(posts, covers, actress, cookie):
+def get_video(posts, covers, name):
 
     session = HTMLSession()
 
@@ -142,7 +137,7 @@ def get_video(posts, covers, actress, cookie):
 
     for post, cover in zip(posts, covers):
 
-        content = session.get(post, headers = get_headers(cookie))
+        content = session.get(post, headers = get_headers())
 
         datas = content.html.find("div[class = 'td']")
 
@@ -154,14 +149,14 @@ def get_video(posts, covers, actress, cookie):
 
         issue_title = content.html.find("h2[class = 'p-workPage__title']")[0].text.strip()
 
-        videos.append({'day': issue_day, 'number': issue_number, 'name': actress['name'], 'title': issue_title, 'cover': cover, 'company': 'ideapocket'})
+        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': cover, 'company': avc_manager.company})
 
         time.sleep(3)
     
     return videos
 
 
-def Download_video(videos, cookie):
+def Download_video(videos):
 
     for video in videos:
         
@@ -169,7 +164,7 @@ def Download_video(videos, cookie):
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
-        image = get_content(video['image'], cookie)
+        image = get_content(video['image'])
 
         file_type = video['image'].split('.')[-1]
 
@@ -188,28 +183,23 @@ def Download_video(videos, cookie):
         time.sleep(2)
        
         
-def get_data(actress, url, cookie, SQL_password):
+def get_data(actress, url):
 
     session = HTMLSession()
 
-    content = session.get(url, headers = get_headers(cookie), timeout = 5)
+    content = session.get(url, headers = get_headers())
 
     try :
         next_page = content.html.find("a[rel = 'next']")[0].attrs["href"]
+
     except:
         next_page = 'none'
 
-    posts, covers = get_post(url, next_page, cookie)
-    
-    print('get post success')
+    posts, covers = get_post(url, next_page)
 
-    videos = get_video(posts, covers, actress, cookie)
+    videos = get_video(posts, covers, actress['name'])
 
-    print('get issue data success')
-
-    savefiles.save_data(videos, 'ideapocket', SQL_password)
-
-    print('MySQL saved success')
+    savefiles.save_data(videos, 'ideapocket', avc_manager.sql_password)
     
     '''
     Download function is choose to you.
@@ -220,30 +210,28 @@ def get_data(actress, url, cookie, SQL_password):
     '''
 
     
-def main(SQL_password):
+def main(sql_password):
 
     start = time.time()
 
     actresses, cookie = search_girls()
 
-    savefiles.save_actresslist(actresses, SQL_password, 'ideapocket')
+    avc_manager.cookie = cookie
+    avc_manager.sql_password = sql_password
+
+    savefiles.save_actresslist(actresses, sql_password, avc_manager.company)
 
     for actress in actresses:
         
-        last_update = savefiles.check_day(actress['name'], 'ideapocket', SQL_password)
+        last_update_day = savefiles.check_day(actress['name'], avc_manager.company, sql_password)
 
         if last_update:
-            s1_updater.main(last_update['day'], actress, actress['url'], SQL_password)
+            s1_updater.main(last_update_day['day'], actress, actress['url'], sql_password)
 
         else:
-            get_data(actress, actress['url'], cookie, SQL_password)
+            get_data(actress, actress['url'])
 
-    '''
-    url = 'https://ideapocket.com/actress/detail/798093'
-    cookie = '_session=eyJpdiI6Im9tU0lJXC80ODR6cG9oSlpMMmE4Q0J3PT0iLCJ2YWx1ZSI6ImladGRhbDJNb3N0TzBYUDN3V2M2eHRvVzdBTkluUW8xZ1pUaG5PR0oyZEQ1T2sxVERPdlBWYnNKdlErYUZRVG50bEpCWTRzRjVwMkNRb05OUVpRMFUyWkhPeEY3aXZDM05MMlp0OUhwRWJ5cEUrejlRWGUxQ1pOT205XC9mVmVuUCIsIm1hYyI6ImJlMWRjZmVjMGU2ODYzOGVkYmU3MmJhNDE4MGQ4MzE2MGRlYWFkY2ZmN2FkYjgxMDYxMTkyMmFmZmJlZTlhZGEifQ%3D%3D'
-    actress = {'name': '白峰ミウ', 'headshot': '123', 'url': url}
-    get_data(actress, url, cookie, SQL_password)
-    '''
+        print('{0} video items save complete.'.format(actress['name']))
     
     print(' Success !!!! ╮(╯  _ ╰ )╭')
     

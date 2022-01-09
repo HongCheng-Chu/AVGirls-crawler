@@ -1,21 +1,14 @@
-import requests
-import os
-import time
-import json
-import random
-import re
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
-from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from lxml import etree
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 import savefiles
+from av_manager import AvManager
 
+avc_manager = AvManager()
+avc_manager.company = 'FALENO'
 
 def get_post(last_update_day, actress, url):
 
@@ -62,37 +55,18 @@ def get_post(last_update_day, actress, url):
         day_list = root.xpath("//div[@class='btn08']")
         day = day_list[0].text.split(" ")[0].replace("/", "-")
 
-        if(day <= last_update_day):
+        if(day < last_update_day):
             break
 
-        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'image': image})
-
-    cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
-
-    cookiestr = ";".join(item for item in cookie)
+        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'video': image, 'company': 'FALENO'})
 
     driver.quit()
 
-    return posts, cookiestr
+    return posts
 
 
-def main(last_update_day, name, url):
+def main(last_update_day, name, url, sql_password):
 
-    posts, cookie = get_post(last_update_day, name, url)
+    posts= get_post(last_update_day, name, url)
 
-    print("get videos data success")
-
-    print(posts)
-
-    if posts:
-
-        for post in posts:
-
-            post['company'] = 'faleno'
-
-    try:
-        savefiles.sql_saved(posts, 'faleno')
-    except:
-        print('Do not have new video')
-
-    print('SQL saved success')
+    savefiles.save_data(posts, avc_manager.company, sql_password)
