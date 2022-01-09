@@ -14,25 +14,6 @@ from datetime import datetime
 import savefiles
 
 
-import requests
-import requests_html
-import os
-import time
-import json
-import random
-import re
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
-from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
-from lxml import etree
-from datetime import datetime
-
-import savefiles
-from S1 import s1_updater
-
-
 def get_html(url, cookie):
     response = requests.get(url, headers = get_headers(cookie), allow_redirects=True)
     return response.text # text return Unicode data -> get text
