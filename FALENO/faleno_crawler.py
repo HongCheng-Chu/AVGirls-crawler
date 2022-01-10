@@ -125,7 +125,7 @@ def get_post(actress, url):
         day_list = root.xpath("//div[@class='btn08']")
         day = day_list[0].text.split(" ")[0].replace("/", "-")
 
-        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'video': image, 'company': 'FALENO'})
+        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'cover': image, 'company': 'FALENO'})
 
     cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
 

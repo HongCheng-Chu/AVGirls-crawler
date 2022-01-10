@@ -116,7 +116,7 @@ def get_video(cards, images, name):
 
         issue_title = page_soup.find("h2", {"class": "p-workPage__title"}).getText().strip()
 
-        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'video': image, 'company': avc_manager.company})
+        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': image, 'company': avc_manager.company})
 
         time.sleep(3)
     

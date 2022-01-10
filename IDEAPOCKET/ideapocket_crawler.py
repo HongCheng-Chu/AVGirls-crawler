@@ -199,7 +199,7 @@ def get_data(actress, url):
 
     videos = get_video(posts, covers, actress['name'])
 
-    savefiles.save_data(videos, 'ideapocket', avc_manager.sql_password)
+    savefiles.save_data(videos, avc_manager.company, avc_manager.sql_password)
     
     '''
     Download function is choose to you.
@@ -220,13 +220,13 @@ def main(sql_password):
     avc_manager.sql_password = sql_password
 
     savefiles.save_actresslist(actresses, sql_password, avc_manager.company)
-
+    
     for actress in actresses:
         
         last_update_day = savefiles.check_day(actress['name'], avc_manager.company, sql_password)
 
-        if last_update:
-            s1_updater.main(last_update_day['day'], actress, actress['url'], sql_password)
+        if last_update_day:
+            ideapocket_updater.main(last_update_day['day'], actress, actress['url'], sql_password, cookie)
 
         else:
             get_data(actress, actress['url'])

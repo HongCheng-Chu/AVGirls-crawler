@@ -3,6 +3,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from fake_useragent import UserAgent
 from lxml import etree
+import time
 
 import savefiles
 from av_manager import AvManager
@@ -58,7 +59,7 @@ def get_post(last_update_day, actress, url):
         if(day < last_update_day):
             break
 
-        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'video': image, 'company': 'FALENO'})
+        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'cover': image, 'company': 'FALENO'})
 
     driver.quit()
 

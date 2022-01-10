@@ -2,14 +2,11 @@ import requests_html
 from requests_html import HTMLSession
 import os
 import time
-import json
-import re
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from fake_useragent import UserAgent
 from lxml import etree
-from datetime import datetime
 
 import savefiles
 from av_manager import AvManager
@@ -33,48 +30,6 @@ def get_headers():
     ua = UserAgent()
     headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
     return headers
-
-
-def search_girls():
-
-    ChromeOptions = Options()
-
-    ChromeOptions.add_argument('--headless')
-
-    prefs = {"profile.managed_default_content_settings.images": 2}
-    ChromeOptions.add_experimental_option("prefs", prefs)
-
-    driver = webdriver.Chrome(chrome_options = ChromeOptions)
-
-    time.sleep(5)
-
-    driver.get('https://ideapocket.com/actress')
-
-    time.sleep(5)
-
-    infos = driver.find_elements_by_xpath("//div[@class='p-hoverCard']")
-
-    actresses = []
-
-    for info in infos:
-
-        root = etree.HTML(info.get_attribute('innerHTML'))
-
-        name_list = root.xpath("//p[@class='name']")
-
-        headshot_list = root.xpath("//div[@class='c-card main']/a/img/@data-src")
-
-        url_list = root.xpath("//a[@class='img']/@href")
-
-        actresses.append({'name': name_list[0].text, 'headshot': headshot_list[0], 'url': url_list[0]})
-
-    cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
-
-    cookiestr = ";".join(item for item in cookie)
-
-    driver.quit()
-
-    return actresses, cookiestr
 
 
 def get_post(url, next_page):
@@ -205,7 +160,7 @@ def get_data(actress, url):
 
     videos = get_video(posts, covers, actress['name'])
 
-    savefiles.save_data(videos, ave_manager.company, avc_manager.sql_password)
+    savefiles.save_data(videos, avc_manager.company, avc_manager.sql_password)
     
     '''
     Download function is choose to you.
@@ -218,9 +173,9 @@ def get_data(actress, url):
 
 def main(last_update_day, actress, url, sql_password, cookie):
     
-    avc_manager.cookie = get_cookie(url)
+    avc_manager.cookie = cookie
     avc_manager.sql_password = sql_password
-    ave_manager.update = last_update_day
+    avc_manager.update = last_update_day
    
     get_data(actress, url)
 

@@ -11,7 +11,6 @@ from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from lxml import etree
-from datetime import datetime
 
 import savefiles
 from S1 import s1_updater
@@ -158,7 +157,7 @@ def get_video(cards, images, name):
 
         issue_title = page_soup.find("h2", {"class": "p-workPage__title"}).getText().strip()
 
-        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'video': image, 'company': 'S1'})
+        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': image, 'company': 'S1'})
 
         time.sleep(3)
     
@@ -208,7 +207,7 @@ def get_data(actress, url):
 
     videos = get_video(posts, images, actress['name'])
 
-    savefiles.sql_saved(videos, avc_manager.company)
+    savefiles.save_data(videos, avc_manager.company, avc_manager.sql_password)
     
     '''
     The following function is choose on you.
@@ -229,7 +228,7 @@ def main(sql_password):
     avc_manager.cookie = cookie
     avc_manager.sql_password = sql_password
 
-    savefiles.save_actresslist(actresses, SQL_password, avc_manager.company)
+    savefiles.save_actresslist(actresses, sql_password, avc_manager.company)
 
     for actress in actresses:
         
