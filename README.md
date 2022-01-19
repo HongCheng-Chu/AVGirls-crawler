@@ -5,8 +5,7 @@ Copyright © 2022 IDEAPOCKET Inc.
 
 ## Warning
 - New version will be upload recently.
-- This project will be keep updating by each month.
-- GirlsData.json is unavailable in save_files.py.
+- This project will be keep updating and maintaining by each month.
 
 ## Purpose
 - Helping you to download girls imformation and videos cover.
@@ -28,4 +27,4 @@ Copyright © 2022 IDEAPOCKET Inc.
 
 ## Contact me
 - Please send the problem to jerry840622@gmail.com, I try my best to help you, thank you everyone.
-- I will doing other company crawler after S1 finish like Madonna and MOODYZ which if it easily get.
+- I will update other company crawler which if it easily do.
