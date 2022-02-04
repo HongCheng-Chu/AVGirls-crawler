@@ -5,7 +5,7 @@ from pymysql import cursors
 def create_database(sql_password):
 
     try:
-        connection = pymysql.connect(host='localhost',
+        conn = pymysql.connect(host='localhost',
                            user='root',
                            password= sql_password,
                            cursorclass=pymysql.cursors.DictCursor,
@@ -13,13 +13,13 @@ def create_database(sql_password):
     except:
         print('Connect fail')
 
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
     sql = "create database if not exists avgirls"
 
     cursor.execute(sql)
 
-    connection.close()
+    conn.close()
 
     return 'avgirls'
 
@@ -28,14 +28,17 @@ def save_data(videos, company, sql_password):
 
     sql_database = create_database(sql_password)
 
-    connection = pymysql.connect(host='localhost',
+    try:
+        conn = pymysql.connect(host='localhost',
                                user='root',
                                password= sql_password,
                                database= sql_database,
                                cursorclass=pymysql.cursors.DictCursor, # 以字典的形式返回操作結果
                                charset='utf8')
+    except:
+        print('Connect fail')
 
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
     try:
         sql = "create table if not exists {0}(\
@@ -49,27 +52,25 @@ def save_data(videos, company, sql_password):
                )engine=InnoDB DEFAULT CHARSET=utf8;".format(company)
 
         cursor.execute(sql)
-        connection.commit()
+        conn.commit()
 
     except:
-        connection.rollback()
+        conn.rollback()
 
     for video in videos:  
 
-        sql = "insert into {0} (day, number, name, title, cover, company) VALUES (%s, %s, %s, %s, %s, %s)".format(company)
+        sql = "insert into {0} (day, number, name, title, cover, company) values (%s, %s, %s, %s, %s, %s)".format(company)
 
         val = (video['day'], video['number'], video['name'], video['title'], video['cover'], video['company'])
-        
+
         try:
             cursor.execute(sql, val)
-            connection.commit()
-            print('{0} save success in {1} list'.format(video['title'], company))
+            conn.commit()
 
         except:
-            connection.rollback()
-            print('{0} already save in {1} list'.format(video['title'], company))
-
-    connection.close()
+            conn.rollback()
+        
+    conn.close()
 
 
 def check_day(name, company, sql_password):
@@ -96,7 +97,6 @@ def check_day(name, company, sql_password):
         recent_day = cursor.fetchone()
 
     except:
-        connection.rollback()
 
         recent_day = ''
 
@@ -107,12 +107,12 @@ def check_day(name, company, sql_password):
     return recent_day
 
 
-def save_actresslist(girls, sql_password, company):
+def save_actresslist(girls, sql_password):
 
     sql_database = create_database(sql_password)
 
     try:
-        connection = pymysql.connect(host='localhost',
+        conn = pymysql.connect(host='localhost',
                                user='root',
                                password= sql_password,
                                database= sql_database,
@@ -121,7 +121,7 @@ def save_actresslist(girls, sql_password, company):
     except:
         print('Connect fail')
 
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
     try:
         sql = "create table if not exists actresslist(\
@@ -132,37 +132,34 @@ def save_actresslist(girls, sql_password, company):
                birth varchar(20),\
                company varchar(20),\
                body varchar(20),\
-               cup varchar(20),\
-               twitter varchar(250),\
-               ig varchar(250),\
                primary key (jp)\
                )engine=InnoDB DEFAULT CHARSET=utf8;"
 
         cursor.execute(sql)
-        connection.commit()
+        conn.commit()
 
     except:
-        connection.rollback()
+        conn.rollback()
 
     for girl in girls:
 
-        sql = "select jp from actresslist where jp = '{0}'".format(girl['name'])
+        sql = "select jp from actresslist where jp = '{0}'".format(girl['jp'])
         actress = cursor.execute(sql)
 
         if actress:
-            sql = "update actresslist set headshot = '{0}' where jp = '{1}'".format(girl['headshot'], girl['name'])
+            sql = "update actresslist set headshot=%s, en=%s, ch=%s, birth=%s, company=%s, body=%s where jp = '{0}'".format(girl['jp'])
 
-            cursor.execute(sql)
-            connection.commit()
-            print('{0} update success'.format(girl['name']))
-
-        else:
-            sql = "insert into actresslist (jp, headshot, company) values (%s, %s, %s)"
-
-            val = (girl['name'], girl['headshot'], company)
+            val = (girl['headshot'], girl['en'], girl['ch'], girl['birth'], girl['company'], girl['body'])
 
             cursor.execute(sql, val)
-            connection.commit()
-            print('{0} save success'.format(girl['name']))
+            conn.commit()
 
-    connection.close()
+        else:
+            sql = "insert into actresslist (headshot, jp, en, ch, birth, company, body) values (%s, %s, %s, %s, %s, %s, %s)"
+
+            val = (girl['headshot'], girl['jp'], girl['en'], girl['ch'], girl['birth'], girl['company'], girl['body'])
+
+            cursor.execute(sql, val)
+            conn.commit()
+
+    conn.close()

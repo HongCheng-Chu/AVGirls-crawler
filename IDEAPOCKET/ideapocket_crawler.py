@@ -11,8 +11,8 @@ import savefiles
 from IDEAPOCKET import ideapocket_updater
 from av_manager import AvManager
 
-avc_manager = AvManager()
-avc_manager.company = 'ideapocket'
+manager = AvManager()
+manager.company = 'ideapocket'
 
 
 def get_content(url):
@@ -28,11 +28,11 @@ def download_obj(data, path):
 
 def get_headers():
     ua = UserAgent()
-    headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
+    headers = {'user-agent': ua.random, 'cookie': manager.cookie}
     return headers
 
 
-def search_girls():
+def get_girls():
 
     ChromeOptions = Options()
 
@@ -46,25 +46,35 @@ def search_girls():
     time.sleep(5)
 
     driver.get('https://ideapocket.com/actress')
-
+    
     time.sleep(5)
 
     infos = driver.find_elements_by_xpath("//div[@class='p-hoverCard']")
 
     actresses = []
-
+    
     for info in infos:
+
+        actress = {'headshot': None, 'jp': None, 'en': None, 'ch': None, 'birth': None, 'company': None, 'body': None}
 
         root = etree.HTML(info.get_attribute('innerHTML'))
 
-        name_list = root.xpath("//p[@class='name']")
+        jpname_list = root.xpath("//p[@class='name']")
+        actress['jp'] = jpname_list[0].text
+
+        enname_list = root.xpath("//p[@class='en c-main-font']")
+        actress['en'] = enname_list[0].text
 
         headshot_list = root.xpath("//div[@class='c-card main']/a/img/@data-src")
+        actress['headshot'] = headshot_list[0]
 
         url_list = root.xpath("//a[@class='img']/@href")
+        actress['url'] = url_list[0]
 
-        actresses.append({'name': name_list[0].text, 'headshot': headshot_list[0], 'url': url_list[0]})
+        actress['company'] = manager.company
 
+        actresses.append(actress)
+    
     cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
 
     cookiestr = ";".join(item for item in cookie)
@@ -74,7 +84,7 @@ def search_girls():
     return actresses, cookiestr
 
 
-def get_post(url, next_page):
+def get_post(actress, url):
 
     session = HTMLSession()
 
@@ -82,23 +92,39 @@ def get_post(url, next_page):
 
     covers = []
 
-    if next_page == 'none':
+    content = session.get(url, headers = get_headers())
 
-        content = session.get(url, headers = get_headers())
-
-        cards = content.html.find("div[class = 'swiper-slide c-low--6']")[0].find("a[class = 'item']")
+    profs = content.html.find("div[class = 'p-profile__info']")[0].find("div[class = 'item']")
+    
+    for prof in profs:
+        try:
+            t = prof.find("p[class = 'th']")[0].text.strip()
+        except:
+            t = ""
         
-        for card in cards:
+        if t == '誕生日':
+            actress['birth'] = prof.find("p[class = 'td']")[0].text.strip()
+        if t == '3サイズ':
+            actress['body'] = prof.find("p[class = 'td']")[0].text.strip()
+    
+    cards = content.html.find("div[class = 'swiper-slide c-low--6']")[0].find("a[class = 'item']")
+        
+    for card in cards:
 
-            post = card.attrs["href"]
+        post = card.attrs["href"]
 
-            posts.append(post)
+        posts.append(post)
 
-            cover = card.find("img")[0].attrs["data-src"]
+        cover = card.find("img")[0].attrs["data-src"]
 
-            covers.append(cover)
+        covers.append(cover)
             
-        time.sleep(2)
+    time.sleep(2)
+
+    try:
+        next_page = content.html.find("a[rel = 'next']")[0].attrs["href"]
+    except:
+        next_page = None
 
     while not next_page == 'none':
 
@@ -125,7 +151,8 @@ def get_post(url, next_page):
         url = next_page
 
         time.sleep(2)
-
+    
+    time.sleep(3)
     return posts, covers
 
 
@@ -156,6 +183,10 @@ def get_video(posts, covers, name):
     return videos
 
 
+'''
+The following download function is choose on you.
+Recommend to use MySQL download which is more quickly.
+'''
 def Download_video(videos):
 
     for video in videos:
@@ -183,55 +214,37 @@ def Download_video(videos):
         time.sleep(2)
        
         
-def get_data(actress, url):
+def get_data(actress):
 
-    session = HTMLSession()
+    posts, covers = get_post(actress, actress['url'])
 
-    content = session.get(url, headers = get_headers())
+    videos = get_video(posts, covers, actress['jp'])
 
-    try :
-        next_page = content.html.find("a[rel = 'next']")[0].attrs["href"]
-
-    except:
-        next_page = 'none'
-
-    posts, covers = get_post(url, next_page)
-
-    videos = get_video(posts, covers, actress['name'])
-
-    savefiles.save_data(videos, avc_manager.company, avc_manager.sql_password)
-    
-    '''
-    Download function is choose to you.
-
-    Download_video(videos, cookie)
-
-    print('Download all post image & video success')
-    '''
+    savefiles.save_data(videos, manager.company, manager.sql_password)
 
     
 def main(sql_password):
 
     start = time.time()
 
-    actresses, cookie = search_girls()
+    actresses, cookie = get_girls()
 
-    avc_manager.cookie = cookie
-    avc_manager.sql_password = sql_password
+    manager.cookie = cookie
+    manager.sql_password = sql_password
 
-    savefiles.save_actresslist(actresses, sql_password, avc_manager.company)
-    
     for actress in actresses:
         
-        last_update_day = savefiles.check_day(actress['name'], avc_manager.company, sql_password)
+        last_update_day = savefiles.check_day(actress['jp'], manager.company, sql_password)
 
         if last_update_day:
-            ideapocket_updater.main(last_update_day['day'], actress, actress['url'], sql_password, cookie)
+            ideapocket_updater.main(last_update_day['day'], actress, sql_password, cookie)
 
         else:
-            get_data(actress, actress['url'])
-
-        print('{0} video items save complete.'.format(actress['name']))
+            get_data(actress)
+        
+        print('{0} video items save complete.'.format(actress['jp']))
+    
+    savefiles.save_actresslist(actresses, sql_password)
     
     print(' Success !!!! ╮(╯  _ ╰ )╭')
     

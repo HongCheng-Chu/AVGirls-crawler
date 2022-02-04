@@ -1,10 +1,6 @@
 import requests
-import requests_html
 import os
 import time
-import json
-import random
-import re
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -16,8 +12,8 @@ import savefiles
 from S1 import s1_updater
 from av_manager import AvManager
 
-avc_manager = AvManager()
-avc_manager.company = 'S1'
+manager = AvManager()
+manager.company = 's1'
 
 
 def get_html(url):
@@ -38,11 +34,11 @@ def download_obj(data, path):
 
 def get_headers():
     ua = UserAgent()
-    headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
+    headers = {'user-agent': ua.random, 'cookie': manager.cookie}
     return headers
 
 
-def search_girls():
+def get_girls():
 
     ChromeOptions = Options()
 
@@ -65,15 +61,25 @@ def search_girls():
 
     for info in infos:
 
+        actress = {'headshot': None, 'jp': None, 'en': None, 'ch': None, 'birth': None, 'company': None, 'body': None}
+
         root = etree.HTML(info.get_attribute('innerHTML'))
 
-        name_list = root.xpath("//p[@class='name']")
+        jpname_list = root.xpath("//p[@class='name']")
+        actress['jp'] = jpname_list[0].text
+
+        enname_list = root.xpath("//p[@class='en c-main-font']")
+        actress['en'] = enname_list[0].text
 
         url_list = root.xpath("//a[@class='img']")
+        actress['url'] = url_list[0].get('href')
 
         headshot_list = root.xpath("//a[@class='img']/img")
+        actress['headshot'] = headshot_list[0].get('data-src')
 
-        actresses.append({'name': name_list[0].text, 'url': url_list[0].get('href'), 'headshot': headshot_list[0].get('data-src')})
+        actress['company'] = manager.company
+
+        actresses.append(actress)
 
     cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
 
@@ -84,33 +90,46 @@ def search_girls():
     return actresses, cookiestr
 
 
-def get_post(url, next_page):
+def get_post(actress, url):
 
-    post_links = []
+    posts = []
 
-    image_links = []
+    images = []
 
-    if next_page == 'none':
+    page_html = get_html(url)
 
-        page_html = get_html(url)
+    page_soup = BeautifulSoup(page_html, 'html.parser')
 
-        page_soup = BeautifulSoup(page_html, 'html.parser')
+    profs = page_soup.find("div", {'class':"p-profile__info"}).find_all("div", {'class':"item"})
+    
+    for prof in profs:
+        try:
+            t = prof.find("p", {'class':"th"}).getText().strip()
+        except:
+            t = ""
+        
+        if t == '誕生日':
+            actress['birth'] = prof.find("p", {'class':"td"}).getText().strip()
+        if t == '3サイズ':
+            actress['body'] = prof.find("p", {'class':"td"}).getText().strip()
+    
+    cards = page_soup.find("div", {'class':"swiper-slide c-low--6"}).find_all("a", {'class':"item"})
 
-        cards = page_soup.find("div", {'class':"swiper-slide c-low--6"}).find_all("a", {'class':"item"})
+    for card in cards:
 
-        for card in cards:
+        posts.append(card["href"])
 
-            post_links.append(card["href"])
+        image = card.find("img")["data-src"]
 
-            image = card.find("img")["data-src"]
-
-            image_links.append(image)
-            
-        time.sleep(2)
+        images.append(image)
+    try:
+        next_page = page_soup.find("a", {"rel": "next"})["href"]
+    except:
+        next_page = None
 
     while not next_page == 'none':
 
-        page_html = get_html(url)
+        page_html = get_html(next_page)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
@@ -118,23 +137,22 @@ def get_post(url, next_page):
 
         for card in cards:
 
-            post_links.append(card["href"])
+            posts.append(card["href"])
 
             image = card.find("img")["data-src"]
 
-            image_links.append(image)
+            images.append(image)
 
         try:
             next_page = page_soup.find("a", {"rel": "next"})["href"]
 
         except:
-            next_page = 'none'
-
-        url = next_page
+            break
 
         time.sleep(2)
 
-    return post_links, image_links
+    time.sleep(5)
+    return posts, images
 
 
 def get_video(cards, images, name):
@@ -157,13 +175,17 @@ def get_video(cards, images, name):
 
         issue_title = page_soup.find("h2", {"class": "p-workPage__title"}).getText().strip()
 
-        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': image, 'company': 'S1'})
+        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': image, 'company': manager.company})
 
         time.sleep(3)
     
     return videos
 
 
+'''
+The following download function is choose on you.
+Recommend to use MySQL download which is more quickly.
+'''
 def Download_video(videos):
 
     for video in videos:
@@ -191,58 +213,37 @@ def Download_video(videos):
         time.sleep(2)
        
         
-def get_data(actress, url):
+def get_data(actress):
 
-    html = get_html(url)
+    posts, images = get_post(actress, actress['url'])
 
-    soup = BeautifulSoup(html, "html.parser")
+    videos = get_video(posts, images, actress['jp'])
 
-    try :
-        next_page = soup.find("a", {"rel": "next"})["href"]
-
-    except:
-        next_page = 'none'
-
-    posts, images = get_post(url, next_page)
-
-    videos = get_video(posts, images, actress['name'])
-
-    savefiles.save_data(videos, avc_manager.company, avc_manager.sql_password)
-    
-    '''
-    The following function is choose on you.
-    Recommend to use MySQL download which is more quickly.
-    '''
-
-    #Download_video(videos)
-    #print('Download all post image & video success')
-    
+    savefiles.save_data(videos, manager.company, manager.sql_password)
 
 
 def main(sql_password):
 
     start = time.time()
     
-    actresses, cookie = search_girls()
+    actresses, cookie = get_girls()
 
-    avc_manager.cookie = cookie
-    avc_manager.sql_password = sql_password
-
-    savefiles.save_actresslist(actresses, sql_password, avc_manager.company)
+    manager.cookie = cookie
+    manager.sql_password = sql_password
 
     for actress in actresses:
         
-        last_update_day = savefiles.check_day(actress['name'], avc_manager.company, sql_password)
+        last_update_day = savefiles.check_day(actress['name'], manager.company, sql_password)
 
         if last_update_day:
-            s1_updater.main(last_update_day['day'], actress, actress['url'], sql_password, cookie)
+            s1_updater.main(last_update_day['day'], actress, sql_password, cookie)
 
         else:
-            get_data(actress, actress['url'])
+            get_data(actress)
 
         print('{0} video items save complete.'.format(actress['name']))
     
-    print(' Success !!!! ╮(╯  _ ╰ )╭')
+    savefiles.save_actresslist(actresses, sql_password)
     
     end = time.time()
 

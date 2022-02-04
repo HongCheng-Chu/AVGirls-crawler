@@ -14,8 +14,8 @@ from datetime import datetime
 import savefiles
 from av_manager import AvManager
 
-avc_manager = AvManager()
-avc_manager.company = 'S1'
+manager = AvManager()
+manager.company = 's1'
 
 
 def get_html(url):
@@ -36,37 +36,35 @@ def download_obj(data, path):
 
 def get_headers():
     ua = UserAgent()
-    headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
+    headers = {'user-agent': ua.random, 'cookie': manager.cookie}
     return headers
 
 
-def get_post(url, next_page):
+def get_post(actress, url):
 
-    post_links = []
+    posts = []
 
-    image_links = []
+    images = []
 
-    if next_page == 'none':
+    page_html = get_html(url)
 
-        page_html = get_html(url)
+    page_soup = BeautifulSoup(page_html, 'html.parser')
+    
+    cards = page_soup.find("div", {'class':"swiper-slide c-low--6"}).find_all("a", {'class':"item"})
 
-        page_soup = BeautifulSoup(page_html, 'html.parser')
+    for card in cards:
 
-        cards = page_soup.find("div", {'class':"swiper-slide c-low--6"}).find_all("a", {'class':"item"})
+        posts.append(card["href"])
 
-        for card in cards:
+        image = card.find("img")["data-src"]
 
-            post_links.append(card["href"])
+        images.append(image)
 
-            image = card.find("img")["data-src"]
-
-            image_links.append(image)
-            
-        time.sleep(2)
+    next_page = page_soup.find("a", {"rel": "next"})["href"]
 
     while not next_page == 'none':
 
-        page_html = get_html(url)
+        page_html = get_html(next_page)
 
         page_soup = BeautifulSoup(page_html, 'html.parser')
 
@@ -74,23 +72,23 @@ def get_post(url, next_page):
 
         for card in cards:
 
-            post_links.append(card["href"])
+            posts.append(card["href"])
 
             image = card.find("img")["data-src"]
 
-            image_links.append(image)
+            images.append(image)
 
         try:
             next_page = page_soup.find("a", {"rel": "next"})["href"]
 
         except:
-            next_page = 'none'
+            break
 
-        url = next_page
+        time.sleep(3)
 
-        time.sleep(2)
+    time.sleep(3)
 
-    return post_links, image_links
+    return posts, images
 
 
 def get_video(cards, images, name):
@@ -109,20 +107,24 @@ def get_video(cards, images, name):
 
         issue_day = day.split('/')[-1].strip()
 
-        if issue_day < avc_manager.update:
+        if issue_day < manager.update:
             break
 
         issue_number = card.split('/')[-1].split('?')[0]
 
         issue_title = page_soup.find("h2", {"class": "p-workPage__title"}).getText().strip()
 
-        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': image, 'company': avc_manager.company})
+        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': image, 'company': manager.company})
 
         time.sleep(3)
     
     return videos
 
 
+'''
+The following download function is choose on you.
+Recommend to use MySQL download which is more quickly.
+'''
 def Download_video(videos):
 
     for video in videos:
@@ -150,37 +152,19 @@ def Download_video(videos):
         time.sleep(2)
        
         
-def get_data(actress, url):
+def get_data(actress):
 
-    html = get_html(url)
+    posts, images = get_post(actress, actress['url'])
 
-    soup = BeautifulSoup(html, "html.parser")
-
-    try :
-        next_page = soup.find("a", {"rel": "next"})["href"]
-    except:
-        next_page = 'none'
-
-    posts, images = get_post(url, next_page)
-
-    videos = get_video(posts, images, actress['name'])
-
-    savefiles.save_data(videos, avc_manager.company, avc_manager.sql_password)
+    videos = get_video(posts, images, actress['jp'])
     
-    '''
-    The following function is choose on you.
-    Recommend to use MySQL download which is more quickly.
-    '''
+    savefiles.save_data(videos, manager.company, manager.sql_password)
 
-    #Download_video(videos)
-    #print('Download all post image & video success')
+
+def main(last_update_day, actress, sql_password, cookie):
     
-
-
-def main(last_update_day, actress, url, sql_password, cookie):
-    
-    avc_manager.cookie = cookie
-    avc_manager.sql_password = sql_password
-    avc_manager.update = last_update_day
+    manager.cookie = cookie
+    manager.sql_password = sql_password
+    manager.update = last_update_day
    
-    get_data(actress, url)
+    get_data(actress)

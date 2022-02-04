@@ -1,4 +1,3 @@
-import requests
 import os
 import time
 from selenium import webdriver
@@ -12,8 +11,8 @@ import savefiles
 from FALENO import faleno_updater
 from av_manager import AvManager
 
-avc_manager = AvManager()
-avc_manager.company = 'FALENO'
+manager = AvManager()
+manager.company = 'faleno'
 
 
 def get_content(url):
@@ -29,7 +28,7 @@ def download_obj(data, path):
 
 def get_headers():
     ua = UserAgent()
-    headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
+    headers = {'user-agent': ua.random, 'cookie': manager.cookie}
     return headers
 
 
@@ -59,9 +58,9 @@ def search_girls():
     
     actresses = []
 
-    profs = []
-
     for info in infos:
+
+        actress = {'headshot': None, 'jp': None, 'en': None, 'ch': None, 'birth': None, 'company': None, 'body': None, 'twitter': None, 'ig': None}
 
         # driver.find_element_by_xpath only read the first one element
 
@@ -69,18 +68,32 @@ def search_girls():
 
         names = root.xpath("//div[@class='text_name']")
         for name in names:
-            actresses.append(name.text)
+            actress['jp'] = name.text
+
+        ennames = root.xpath("//div[@class='text_name']/span")
+        for en in ennames:
+            actress['en'] = en.text
 
         urls = root.xpath("//div[@class='img_actress01']/a/@href")
         for url in urls:
-            profs.append(url)
+            actress['url'] = url
+
+        imgs = root.xpath("//div[@class='img_actress01']/a/figure/img/@src")
+        for img in imgs:
+            actress['headshot'] = img
+
+        actress['company'] = manager.company
+
+        actresses.append(actress)
 
     driver.quit()
 
-    return actresses, profs
+    actresses.pop()
+
+    return actresses
 
 
-def get_post(actress, url):
+def get_post(actress):
 
     ChromeOptions = Options()
 
@@ -103,10 +116,10 @@ def get_post(actress, url):
     time.sleep(5)
 
     posts = []
-
-    driver.get(url)
-
-    time.sleep(10)
+    
+    driver.get(actress['url'])
+    '''
+    time.sleep(5)
 
     infos = driver.find_elements_by_xpath("//div[@class='waku_kanren01']")
 
@@ -125,7 +138,17 @@ def get_post(actress, url):
         day_list = root.xpath("//div[@class='btn08']")
         day = day_list[0].text.split(" ")[0].replace("/", "-")
 
-        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'cover': image, 'company': 'FALENO'})
+        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'cover': image, 'company': manager.company})
+    
+    time.sleep(5)
+    '''
+    prof = driver.find_element_by_xpath("//div[@class='box_actress02_list clearfix']")
+
+    root = etree.HTML(prof.get_attribute('innerHTML'))
+    
+    profs = root.xpath("//ul/li/p")
+    actress['birth'] = profs[0].text
+    actress['body'] = profs[2].text
 
     cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
 
@@ -161,13 +184,13 @@ def download_video(videos):
             print('{0} download fail'.format(file_name))
 
 
-def get_data(actress, url):
+def get_data(actress):
 
-    posts, cookie = get_post(actress, url)
+    posts, cookie = get_post(actress)
+    
+    manager.cookie = cookie
 
-    avc_manager.cookie = cookie
-
-    savefiles.save_data(posts, avc_manager.company, avc_manager.sql_password)
+    savefiles.save_data(posts, manager.company, manager.sql_password)
 
     '''
     download_video(posts, cookie)
@@ -179,22 +202,27 @@ def get_data(actress, url):
 def main(sql_password):
 
     start = time.time()
-
-    actresses, urls = search_girls()
-
-    avc_manager.sql_password = sql_password
-
-    for actress, url in zip(actresses, urls):
+    
+    actresses = search_girls()
+    
+    manager.sql_password = sql_password
+    '''
+    for actress in actresses:
         
-        last_update_day = savefiles.check_day(actress, avc_manager.company, sql_password)
+        last_update_day = savefiles.check_day(actress['jp'], manager.company, sql_password)
 
         if last_update_day:
-            faleno_updater.main(last_update_day['day'], actress, url, sql_password)
+            faleno_updater.main(last_update_day['day'], actress, sql_password)
 
         else:
-            get_data(actress, url)
+            get_data(actress)
 
-        print('{0} video items save complete.'.format(actress))
+        print('{0} video items save complete.'.format(actress['jp']))
+    '''
+    for actress in actresses:
+
+        posts, cookie = get_post(actress)
+    savefiles.save_actresslist(actresses, sql_password)
     
     print(' Success !!!! ╮(╯  _ ╰ )╭')
 

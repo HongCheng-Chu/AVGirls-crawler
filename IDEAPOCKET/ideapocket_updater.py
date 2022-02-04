@@ -11,8 +11,8 @@ from lxml import etree
 import savefiles
 from av_manager import AvManager
 
-avc_manager = AvManager()
-avc_manager.company = 'IDEAPOCKET'
+manager = AvManager()
+manager.company = 'ideapocket'
 
 
 def get_content(url):
@@ -28,7 +28,7 @@ def download_obj(data, path):
 
 def get_headers():
     ua = UserAgent()
-    headers = {'user-agent': ua.random, 'cookie': avc_manager.cookie}
+    headers = {'user-agent': ua.random, 'cookie': manager.cookie}
     return headers
 
 
@@ -40,23 +40,26 @@ def get_post(url, next_page):
 
     covers = []
 
-    if next_page == 'none':
+    content = session.get(url, headers = get_headers())
 
-        content = session.get(url, headers = get_headers())
-
-        cards = content.html.find("div[class = 'swiper-slide c-low--6']")[0].find("a[class = 'item']")
+    cards = content.html.find("div[class = 'swiper-slide c-low--6']")[0].find("a[class = 'item']")
         
-        for card in cards:
+    for card in cards:
 
-            post = card.attrs["href"]
+        post = card.attrs["href"]
 
-            posts.append(post)
+        posts.append(post)
 
-            cover = card.find("img")[0].attrs["data-src"]
+        cover = card.find("img")[0].attrs["data-src"]
 
-            covers.append(cover)
+        covers.append(cover)
             
-        time.sleep(3)
+    time.sleep(2)
+
+    try:
+        next_page = content.html.find("a[rel = 'next']")[0].attrs["href"]
+    except:
+        next_page = None
 
     while not next_page == 'none':
 
@@ -103,20 +106,24 @@ def get_video(posts, covers, name):
         
         issue_day = day.split('/')[-1].strip()
 
-        if issue_day <= avc_manager.update:
+        if issue_day <= manager.update:
             break
         
         issue_number = post.split('/')[-1].split('?')[0]
 
         issue_title = content.html.find("h2[class = 'p-workPage__title']")[0].text.strip()
 
-        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': cover, 'company': avc_manager.company})
+        videos.append({'day': issue_day, 'number': issue_number, 'name': name, 'title': issue_title, 'cover': cover, 'company': manager.company})
 
         time.sleep(3)
     
     return videos
 
 
+'''
+The following download function is choose on you.
+Recommend to use MySQL download which is more quickly.
+'''
 def Download_video(videos):
 
     for video in videos:
@@ -144,40 +151,22 @@ def Download_video(videos):
         time.sleep(2)
        
         
-def get_data(actress, url):
+def get_data(actress):
 
-    session = HTMLSession()
+    posts, covers = get_post(actress, actress['url'])
 
-    content = session.get(url, headers = get_headers())
+    videos = get_video(posts, covers, actress['jp'])
 
-    try :
-        next_page = content.html.find("a[rel = 'next']")[0].attrs["href"]
-
-    except:
-        next_page = 'none'
-
-    posts, covers = get_post(url, next_page)
-
-    videos = get_video(posts, covers, actress['name'])
-
-    savefiles.save_data(videos, avc_manager.company, avc_manager.sql_password)
-    
-    '''
-    Download function is choose to you.
-
-    Download_video(videos, cookie)
-
-    print('Download all post image & video success')
-    '''
+    savefiles.save_data(videos, manager.company, manager.sql_password)
 
 
-def main(last_update_day, actress, url, sql_password, cookie):
+def main(last_update_day, actress, sql_password, cookie):
     
     avc_manager.cookie = cookie
     avc_manager.sql_password = sql_password
     avc_manager.update = last_update_day
    
-    get_data(actress, url)
+    get_data(actress)
 
 
 

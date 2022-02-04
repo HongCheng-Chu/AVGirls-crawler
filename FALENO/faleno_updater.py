@@ -6,12 +6,9 @@ from lxml import etree
 import time
 
 import savefiles
-from av_manager import AvManager
 
-avc_manager = AvManager()
-avc_manager.company = 'FALENO'
 
-def get_post(last_update_day, actress, url):
+def get_post(last_update_day, actress):
 
     ChromeOptions = Options()
 
@@ -35,7 +32,7 @@ def get_post(last_update_day, actress, url):
 
     posts = []
 
-    driver.get(url)
+    driver.get(actress['url'])
 
     time.sleep(10)
 
@@ -44,7 +41,13 @@ def get_post(last_update_day, actress, url):
     for info in infos:
 
         root = etree.HTML(info.get_attribute('innerHTML'))
-        
+
+        day_list = root.xpath("//div[@class='btn08']")
+        day = day_list[0].text.split(" ")[0].replace("/", "-")
+
+        if(day < last_update_day):
+            break
+
         img_list = root.cssselect('a > img')
         image = img_list[0].get('src') 
 
@@ -53,21 +56,15 @@ def get_post(last_update_day, actress, url):
 
         title = img_list[0].get('alt')
 
-        day_list = root.xpath("//div[@class='btn08']")
-        day = day_list[0].text.split(" ")[0].replace("/", "-")
-
-        if(day < last_update_day):
-            break
-
-        posts.append({'day': day, 'number': number, 'name': actress, 'title': title, 'cover': image, 'company': 'FALENO'})
+        posts.append({'day': day, 'number': number, 'name': actress['jp'], 'title': title, 'cover': image, 'company': actress['company']})
 
     driver.quit()
 
     return posts
 
 
-def main(last_update_day, name, url, sql_password):
+def main(last_update_day, actress, sql_password):
 
-    posts= get_post(last_update_day, name, url)
+    posts= get_post(last_update_day, actress)
 
-    savefiles.save_data(posts, avc_manager.company, sql_password)
+    savefiles.save_data(posts, actress['company'], sql_password)
