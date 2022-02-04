@@ -1,30 +1,24 @@
 # S1-crawler
-Copyright © 2021 S1 Inc.
-Copyright © 2021 FALENO Inc.
-
-## Warning
-- New version will be upload recently.
-- This project will be keep updating by each month.
-- GirlsData.json is unavailable in save_files.py.
+Copyright © 2022 S1 Inc.
+Copyright © 2022 FALENO Inc.
+Copyright © 2022 ideapocket Inc.
 
 ## Purpose
-- Helping you to download girls imformation and videos cover.
-- Keep updating the informations which issue new videos every month.
+- Helping you to get the girls imformation and videos cover.
+- Upload in my blog(built in future).
 
 ## How to use
-1. Download the .py, .txt and .json files and put in same folder.
-2. Set your connection MySQL data in save_files.py.
+1. Download the .py files and put in same folder.
+2. Set your MySQL connection data in save_files.py and MySQL password in main.py.
 3. Run the main.py.
-4. It can auto update by last_update_day.txt.
-5. I will update girls_data.json continuously or update by yourself.
 
 ## Keep in mind
 - This crawler might be banned by IP address, use carefully.
-- The time.sleep() func. can decrease the risk of banned.
-
-## Update convientence crawler in future
-- Create an API for adult website.
+- The time.sleep() function can decrease the risk of banned.
 
 ## Contact me
-- Please send the problem to jerry840622@gmail.com, I try my best to help you, thank you everyone.
-- I will doing other company crawler after S1 finish like Madonna and MOODYZ which if it easily get.
+- Please send the problems or suggestions to jerry840622@gmail.com, I try my best to help you, thanks everyone.
+
+## Remark
+- Doing other company crawler after S1 finish like Madonna, MOODYZ and etc. which if it easily get.
+- Test and maintain twice in each month.
