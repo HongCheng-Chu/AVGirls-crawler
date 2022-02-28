@@ -1,7 +1,7 @@
 # S1-crawler
 Copyright © 2022 S1 Inc.  
 Copyright © 2022 FALENO Inc.  
-Copyright © 2022 ideapocket Inc. 
+Copyright © 2022 ideapocket Inc.  
 Copyright © 2022 moodyz Inc. 
 
 ## Warning
