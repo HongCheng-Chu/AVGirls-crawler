@@ -1,7 +1,13 @@
 # S1-crawler
 Copyright © 2022 S1 Inc.  
 Copyright © 2022 FALENO Inc.  
-Copyright © 2022 ideapocket Inc.  
+Copyright © 2022 ideapocket Inc. 
+Copyright © 2022 moodyz Inc. 
+
+## Warning
+- Preparing to update the method to get the information in each website,  
+  I think there are some weird things on their wbesite, the new spider will be finish on March.
+- In moodyz spider, I use asynchronous func which is more faster the synchronous func, but I am not sure it is faster in my code.
 
 ## Purpose
 - Helping you to get the girls imformation and videos cover.
