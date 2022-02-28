@@ -2,7 +2,8 @@
 Copyright © 2022 S1 Inc.  
 Copyright © 2022 FALENO Inc.  
 Copyright © 2022 ideapocket Inc.  
-Copyright © 2022 moodyz Inc. 
+Copyright © 2022 moodyz Inc.  
+Copyright © 2022 madonna Inc.
 
 ## Warning
 - Preparing to update the method to get the information in each website,  
