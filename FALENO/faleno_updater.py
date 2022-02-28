@@ -5,7 +5,7 @@ from fake_useragent import UserAgent
 from lxml import etree
 import time
 
-import savefiles
+import avSave
 
 
 def get_post(last_update_day, actress):
@@ -67,4 +67,4 @@ def main(last_update_day, actress, sql_password):
 
     posts= get_post(last_update_day, actress)
 
-    savefiles.save_data(posts, actress['company'], sql_password)
+    avSave.avSave(posts, actress['company'], sql_password)

@@ -7,23 +7,12 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from lxml import etree
 
-import savefiles
-from FALENO import faleno_updater
-from av_manager import AvManager
+import avSave
+from faleno import faleno_updater
+from avManager import avManager
 
-manager = AvManager()
+manager = avManager()
 manager.company = 'faleno'
-
-
-def get_content(url):
-    response = requests.get(url, headers = get_headers(), timeout = 10)
-    return response.content # content return bytes(binary) data -> get image, video, file and etc
-
-
-def download_obj(data, path):
-    with open(path, "wb") as file:
-        file.write(data)
-        file.close()
 
 
 def get_headers():
@@ -159,44 +148,13 @@ def get_post(actress):
     return posts, cookiestr
 
 
-def download_video(videos):
-
-    for video in videos:
-        
-        dirpath = r'.\Girls_video.\Faleno.\{0}'.format(video['name'])
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
-
-        image = get_content(video['image'])
-
-        file_name = video['day'] + " " + video['number'] + " " + video['name'] + " " + video['title']
-
-        file_path = r'.\Girls_video.\Faleno.\{0}\{1}.{2}'.format(video['name'], file_name, 'jpg')
-
-        download_obj(image, file_path)
-
-        try:
-            download_obj(image, file_path)
-
-            print('{0} download success'.format(file_name))
-
-        except:
-            print('{0} download fail'.format(file_name))
-
-
 def get_data(actress):
 
     posts, cookie = get_post(actress)
     
     manager.cookie = cookie
 
-    savefiles.save_data(posts, manager.company, manager.sql_password)
-
-    '''
-    download_video(posts, cookie)
-   
-    print('download success')
-    '''
+    avSave.save_data(posts, manager.company, manager.sql_password)
 
 
 def main(sql_password):

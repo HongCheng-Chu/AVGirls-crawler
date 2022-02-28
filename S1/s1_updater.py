@@ -9,29 +9,17 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
-from datetime import datetime
 
-import savefiles
-from av_manager import AvManager
+import avSave
+from avManager import avManager
 
-manager = AvManager()
+manager = avManager()
 manager.company = 's1'
 
 
 def get_html(url):
     response = requests.get(url, headers = get_headers(), allow_redirects=True)
     return response.text # text return Unicode data -> get text
-
-
-def get_content(url):
-    response = requests.get(url, headers = get_headers(), timeout = 10)
-    return response.content # content return bytes(binary) data -> get image, video, file and etc
-
-
-def download_obj(data, path):
-    with open(path, "wb") as file:
-        file.write(data)
-        file.close()
 
 
 def get_headers():
@@ -119,37 +107,6 @@ def get_video(cards, images, name):
         time.sleep(3)
     
     return videos
-
-
-'''
-The following download function is choose on you.
-Recommend to use MySQL download which is more quickly.
-'''
-def Download_video(videos):
-
-    for video in videos:
-        
-        dirpath = r'.\Girls_video.\{0}'.format(video['name'])
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
-
-        image = get_content(video['image'])
-
-        file_type = video['image'].split('.')[-1]
-
-        file_name = video['day'] + " " + video['number'] + " " + video['name'] + " " + video['title']
-
-        file_path = r'.\girls_video.\{0}\{1}.{2}'.format(video['name'], file_name, file_type)
-
-        try:
-            download_obj(image, file_path)
-
-            print('{0} download success'.format(file_name))
-
-        except:
-            print('{0} download fail'.format(file_name))
-
-        time.sleep(2)
        
         
 def get_data(actress):
@@ -158,7 +115,7 @@ def get_data(actress):
 
     videos = get_video(posts, images, actress['jp'])
     
-    savefiles.save_data(videos, manager.company, manager.sql_password)
+    avSave.save_data(videos, manager.company, manager.sql_password)
 
 
 def main(last_update_day, actress, sql_password, cookie):

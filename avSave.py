@@ -43,12 +43,11 @@ def save_data(videos, company, sql_password):
     try:
         sql = "create table if not exists {0}(\
                day varchar(50),\
-               number varchar(50) not null,\
+               number varchar(50),\
                name varchar(50),\
                title varchar(250),\
                cover varchar(250),\
-               company varchar(50),\
-               primary key (number)\
+               company varchar(50)\
                )engine=InnoDB DEFAULT CHARSET=utf8;".format(company)
 
         cursor.execute(sql)

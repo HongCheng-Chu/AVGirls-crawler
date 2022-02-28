@@ -8,28 +8,17 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from lxml import etree
 
-import savefiles
-from S1 import s1_updater
-from av_manager import AvManager
+import avSave
+from s1 import s1_updater
+from avManager import avManager
 
-manager = AvManager()
+manager = avManager()
 manager.company = 's1'
 
 
 def get_html(url):
     response = requests.get(url, headers = get_headers(), allow_redirects=True)
     return response.text # text return Unicode data -> get text
-
-
-def get_content(url):
-    response = requests.get(url, headers = get_headers(), timeout = 10)
-    return response.content # content return bytes(binary) data -> get image, video, file and etc
-
-
-def download_obj(data, path):
-    with open(path, "wb") as file:
-        file.write(data)
-        file.close()
 
 
 def get_headers():
@@ -181,37 +170,6 @@ def get_video(cards, images, name):
     
     return videos
 
-
-'''
-The following download function is choose on you.
-Recommend to use MySQL download which is more quickly.
-'''
-def Download_video(videos):
-
-    for video in videos:
-        
-        dirpath = r'.\Girls_video.\{0}'.format(data['name'])
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
-
-        image = get_content(video['image'])
-
-        file_type = video['image'].split('.')[-1]
-
-        file_name = video['day'] + " " + video['number'] + " " + video['name'] + " " + video['title']
-
-        file_path = r'.\girls_video.\{0}\{1}.{2}'.format(video['name'], file_name, file_type)
-
-        try:
-            download_obj(image, file_path)
-
-            print('{0} download success'.format(file_name))
-
-        except:
-            print('{0} download fail'.format(file_name))
-
-        time.sleep(2)
-       
         
 def get_data(actress):
 
@@ -219,7 +177,7 @@ def get_data(actress):
 
     videos = get_video(posts, images, actress['jp'])
 
-    savefiles.save_data(videos, manager.company, manager.sql_password)
+    avSave.save_data(videos, manager.company, manager.sql_password)
 
 
 def main(sql_password):
@@ -232,7 +190,7 @@ def main(sql_password):
     manager.sql_password = sql_password
 
     for actress in actresses:
-        
+        '''
         last_update_day = savefiles.check_day(actress['name'], manager.company, sql_password)
 
         if last_update_day:
@@ -240,10 +198,11 @@ def main(sql_password):
 
         else:
             get_data(actress)
-
+        '''
+        get_data(actress)
         print('{0} video items save complete.'.format(actress['name']))
     
-    savefiles.save_actresslist(actresses, sql_password)
+    avSave.save_actresslist(actresses, sql_password)
     
     end = time.time()
 
