@@ -13,8 +13,8 @@ import avSave
 from avManager import avManager
 
 manager = avManager()
-manager.company = 'moodyz'
 
+session = HTMLSession()
 asession = AsyncHTMLSession()
 
 
@@ -29,6 +29,7 @@ def get_girls():
     ChromeOptions = Options()
 
     ChromeOptions.add_argument('--headless')
+    ChromeOptions.add_argument('--disable-gpu')
 
     prefs = {"profile.managed_default_content_settings.images": 2}
     ChromeOptions.add_experimental_option("prefs", prefs)
@@ -37,46 +38,53 @@ def get_girls():
 
     time.sleep(5)
 
-    driver.get('https://moodyz.com/actress')
+    page = 'https://moodyz.com/works/list/reserve'
+
+    driver.get(page)
     
     time.sleep(5)
 
-    infos = driver.find_elements_by_xpath("//div[@class='p-hoverCard']")
-
     actresses = []
     
-    for info in infos:
+    while page:
 
-        actress = {'headshot': None, 'jp': None, 'en': None, 'ch': None, 'birth': None, 'company': None, 'body': None}
+        infos = driver.find_elements_by_xpath("//a[@class='name c-main-font-hover']")
+        
+        for info in infos:
 
-        root = etree.HTML(info.get_attribute('innerHTML'))
+            actress = {'headshot': None, 'jp': None, 'en': None, 'ch': None, 'birth': None, 'company': None, 'body': None, 'url': None}
 
-        jpname_list = root.xpath("//p[@class='name']")
-        actress['jp'] = jpname_list[0].text
+            url = info.get_attribute('href')
+            jpname = info.text
 
-        enname_list = root.xpath("//p[@class='en c-main-font']")
-        actress['en'] = enname_list[0].text
+            isExist = next((item for item in actresses if  item['url'] == url), None)
 
-        headshot_list = root.xpath("//div[@class='c-card main']/a/img/@data-src")
-        actress['headshot'] = headshot_list[0]
+            if isExist == None:
+                actress['url'] = url
+                actress['jp'] = jpname
+                actress['company'] = manager.company
+                actresses.append(actress)
+        
+        try:
+            page = driver.find_element_by_xpath("//a[@rel='next']").get_attribute('href')
+            driver.get(page)
+            time.sleep(5)
 
-        url_list = root.xpath("//a[@class='img']/@href")
-        actress['url'] = url_list[0]
-
-        actress['company'] = manager.company
-
-        actresses.append(actress)
+        except:
+            break
     
     cookie = [item["name"] + "=" + item["value"] for item in driver.get_cookies()]
 
     cookiestr = ";".join(item for item in cookie)
-
+    
     driver.quit()
 
     return actresses, cookiestr
 
 
-async def get_post(actress):
+def get_post():
+
+    actress = manager.actress
 
     posts = []
 
@@ -86,11 +94,17 @@ async def get_post(actress):
 
     while not next_page == 'none':
 
-        content = await asession.get(next_page, headers = get_headers())
+        content = session.get(next_page, headers = get_headers())
 
         # get profiles
+        
+        if actress['en'] == None:
 
-        if actress['birth'] == None and actress['body'] == None:
+            enList = content.html.xpath("//div[@class='c-title-main']/div/p")
+            actress['en'] = enList[0].text.strip()
+
+            headshot = content.html.xpath("//img[@class='u-hidden--sp lazyload']/@data-src")
+            actress['headshot'] = headshot[0]
 
             profs = content.html.find("div[class = 'p-profile__info']")[0].find("div[class = 'item']")
     
@@ -118,84 +132,95 @@ async def get_post(actress):
 
             covers.append(cover)
 
-        # get next page
-
         try:
             next_page = content.html.find("a[rel = 'next']")[0].attrs["href"]
 
         except:
             next_page = 'none'
 
-        await asyncio.sleep(2)
-    
+        time.sleep(2)
+
     return posts, covers
 
 
-async def get_video():
+async def get_video(post, cover):
 
     actress = manager.actress
 
-    posts, covers = await get_post(actress)
-    
-    # get video data
+    content = await asession.get(post, headers = get_headers())
 
-    videos = []
+    await asyncio.sleep(3)
+
+    datas = content.html.find("div[class = 'td']")
+
+    day = datas[1].find("a[class = 'c-tag c-main-bg-hover c-main-font c-main-bd']")[0].attrs["href"]
+        
+    issue_day = day.split('/')[-1].strip()
+        
+    issue_number = post.split('/')[-1].split('?')[0]
+
+    issue_title = content.html.find("h2[class = 'p-workPage__title']")[0].text.strip()
+
+    video = {'day': issue_day, 'number': issue_number, 'name': actress['jp'], 'title': issue_title, 'cover': cover, 'company': manager.company}
+
+    return video
+       
+        
+def get_data():
+
+    posts, covers = get_post()
+    '''
+    # async start
+
+    loop = asyncio.get_event_loop()
+
+    tasks = []
     
     for post, cover in zip(posts, covers):
 
-        content = await asession.get(post, headers = get_headers())
+        task = loop.create_task(get_video(post, cover))
 
-        datas = content.html.find("div[class = 'td']")
+        tasks.append(task)
 
-        day = datas[1].find("a[class = 'c-tag c-main-bg-hover c-main-font c-main-bd']")[0].attrs["href"]
-        
-        issue_day = day.split('/')[-1].strip()
-        
-        issue_number = post.split('/')[-1].split('?')[0]
+    done, _ = loop.run_until_complete(asyncio.wait(tasks))
 
-        issue_title = content.html.find("h2[class = 'p-workPage__title']")[0].text.strip()
+    videos = [t.result() for t in done]
 
-        videos.append({'day': issue_day, 'number': issue_number, 'name': actress['jp'], 'title': issue_title, 'cover': cover, 'company': manager.company})
+    loop.run_until_complete(loop.shutdown_asyncgens())
 
-        await asyncio.sleep(2)
-    
-    return videos
-       
-        
-async def get_data():
+    avSave.save_data(videos, manager.company, manager.sql_password)
+    '''
 
-    videos = await get_video()
-
-    #avSaves.save_data(videos, manager.company, manager.sql_password)
 
     
 def main(sql_password):
 
     start = time.time()
-    
-    actresses, cookie = get_girls()
 
-    manager.cookie = cookie
+    manager.company = 'moodyz'
     manager.sql_password = sql_password
 
+    actresses, cookie = get_girls()
+    
+    manager.cookie = cookie
+    
     for actress in actresses:
+
+        manager.actress = actress
         '''
-        last_update_day = avSaves.check_day(actress['jp'], manager.company, sql_password)
+        last_update_day = avSave.check_day(actress['jp'], manager.company, manager.sql_password)
 
         if last_update_day:
-            ideapocket_updater.main(last_update_day['day'], actress, sql_password, cookie)
-
+            moodyz_updater.main(last_update_day['day'], actress, manager.sql_password, manager.cookie)
+        
         else:
-            get_data(actress)
+            get_data()
         '''
-        manager.actress = actress
-
-        asession.run(get_data)
+        get_data()
         
         print('{0} video items save complete.'.format(actress['jp']))
-
-    print(actresses)
-    #avSave.save_actresslist(actresses, sql_password)
+    
+    avSave.save_actresslist(actresses, manager.sql_password)
     
     print(' Success !!!! ╮ (╯  _ ╰ )╭')
     
