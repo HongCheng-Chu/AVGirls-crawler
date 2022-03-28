@@ -1,9 +1,5 @@
-# S1-crawler
-Copyright © 2022 S1 Inc.  
-Copyright © 2022 FALENO Inc.  
-Copyright © 2022 ideapocket Inc.  
-Copyright © 2022 moodyz Inc.  
-Copyright © 2022 madonna Inc.
+# Actress Crawler
+I study JS revserse crawler now, so this project maybe update slowly, but I will keep maintaining
 
 ## Warning
 - Preparing to update the method to get the information in each website,  
@@ -27,5 +23,12 @@ Copyright © 2022 madonna Inc.
 - Please send the problems or suggestions to jerry840622@gmail.com, I try my best to help you, thanks everyone.
 
 ## Remark
-- Doing other company crawler after S1 finish like Madonna, MOODYZ and etc. which if it easily get.
-- Test and maintain twice in each month.
+- Doing other company crawler as soon as possible.
+- Test and maintain one time in each month.
+
+## Important
+- Copyright © 2022 S1 Inc.  
+- Copyright © 2022 FALENO Inc.  
+- Copyright © 2022 ideapocket Inc.  
+- Copyright © 2022 moodyz Inc.  
+- Copyright © 2022 madonna Inc.
