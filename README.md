@@ -1,7 +1,7 @@
 # Actress Crawler
 I study JS revserse crawler now, so this project maybe update slowly, but I will keep maintaining.
 
-## Warning
+## About this project
 - In moodyz spider, I use asynchronous func which is more faster the synchronous func, 
   also I change all crawler to async func in future, but old crawler of sync func will remain.
 
@@ -14,7 +14,7 @@ I study JS revserse crawler now, so this project maybe update slowly, but I will
 2. Set your MySQL connection data in avManeger.py and MySQL password in main.py.
 3. Run the code.
 
-## Keep in mind
+## Warning
 - This crawler might be banned by IP address, use carefully.
 - The time.sleep() function can decrease the risk of banned.
 
